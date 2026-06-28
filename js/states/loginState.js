@@ -1,0 +1,256 @@
+// loginState.js — LOGIN / REGISTER screen connected to MongoDB
+
+const _loginBgImg = new Image();
+_loginBgImg.src = 'bg login page.png';
+
+function validateCredentials(username, password) {
+  return username.trim().length > 0 && password.trim().length > 0;
+}
+
+class LoginState {
+  constructor(game) {
+    this.game = game;
+    this._panel = null;
+    this._tab = 'login'; // 'login' | 'register'
+  }
+
+  enter() { this._buildUI(); }
+
+  exit() {
+    if (this._panel && this._panel.parentNode) this._panel.parentNode.removeChild(this._panel);
+    this._panel = null;
+  }
+
+  update(dt) {}
+
+  render(ctx) {
+    if (_loginBgImg.complete && _loginBgImg.naturalWidth > 0) {
+      ctx.drawImage(_loginBgImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    } else {
+      ctx.fillStyle = '#060a10'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    }
+    ctx.fillStyle = 'rgba(6,10,16,0.55)';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Title
+    ctx.save();
+    ctx.shadowColor = '#024FCB'; ctx.shadowBlur = 24;
+    ctx.fillStyle = '#F8B700'; ctx.font = 'bold 44px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('FILIPINO HEROES', CANVAS_WIDTH / 2, 100);
+    ctx.shadowColor = '#F8B700'; ctx.shadowBlur = 18;
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 58px serif';
+    ctx.fillText('FIGHTER', CANVAS_WIDTH / 2, 158);
+    ctx.restore();
+
+    // Divider
+    const grad = ctx.createLinearGradient(100, 0, CANVAS_WIDTH - 100, 0);
+    grad.addColorStop(0, 'rgba(248,183,0,0)');
+    grad.addColorStop(0.5, 'rgba(248,183,0,0.6)');
+    grad.addColorStop(1, 'rgba(248,183,0,0)');
+    ctx.strokeStyle = grad; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(100, 172); ctx.lineTo(CANVAS_WIDTH - 100, 172); ctx.stroke();
+
+    this._drawRune(ctx, 55, 55);
+    this._drawRune(ctx, CANVAS_WIDTH - 55, 55);
+    this._drawRune(ctx, 55, CANVAS_HEIGHT - 55);
+    this._drawRune(ctx, CANVAS_WIDTH - 55, CANVAS_HEIGHT - 55);
+  }
+
+  _drawRune(ctx, cx, cy) {
+    ctx.save(); ctx.strokeStyle = 'rgba(248,183,0,0.25)'; ctx.lineWidth = 1;
+    ctx.translate(cx, cy);
+    ctx.strokeRect(-14, -14, 28, 28); ctx.strokeRect(-8, -8, 16, 16);
+    ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(14, 0); ctx.moveTo(0, -14); ctx.lineTo(0, 14); ctx.stroke();
+    ctx.restore();
+  }
+
+  _buildUI() {
+    const overlay = document.getElementById('ui-overlay');
+    const panel = document.createElement('div');
+    panel.className = 'ui-panel';
+    panel.style.cssText = `
+      background: rgba(8,14,28,0.15);
+      border: 1px solid rgba(184,216,248,0.25);
+      box-shadow: 0 8px 40px rgba(2,79,203,0.15);
+      padding: 28px 40px 32px;
+      text-align: center;
+      font-family: 'Georgia', serif;
+      min-width: 360px;
+    `;
+
+    // Tab buttons
+    const btnStyle = (active) =>
+      `padding:8px 24px;font-family:'Georgia',serif;font-size:12px;font-weight:bold;cursor:pointer;` +
+      `letter-spacing:2px;text-transform:uppercase;border:none;transition:all 0.15s;` +
+      `background:${active ? 'linear-gradient(180deg,#024FCB,#023FA2)' : 'rgba(14,21,32,0.6)'};` +
+      `color:${active ? '#F8B700' : '#64748B'};` +
+      `border-bottom:2px solid ${active ? '#F8B700' : 'transparent'};`;
+
+    panel.innerHTML = `
+      <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid rgba(58,136,232,0.2);">
+        <button id="tab-login"    style="${btnStyle(true)}">LOGIN</button>
+        <button id="tab-register" style="${btnStyle(false)}">REGISTER</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="login-form">
+        <div style="margin-bottom:12px;text-align:left;">
+          <label style="color:#F8B700;font-size:11px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;">Username</label>
+          <input id="login-user" type="text" placeholder="Enter username" autocomplete="off"
+            style="width:100%;padding:10px 14px;font-family:monospace;font-size:14px;background:rgba(6,10,22,0.5);color:#e0e8ff;border:1px solid rgba(58,136,232,0.35);outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#3A88E8'" onblur="this.style.borderColor='rgba(58,136,232,0.35)'"/>
+        </div>
+        <div style="margin-bottom:18px;text-align:left;">
+          <label style="color:#F8B700;font-size:11px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;">Password</label>
+          <input id="login-pass" type="password" placeholder="Enter password"
+            style="width:100%;padding:10px 14px;font-family:monospace;font-size:14px;background:rgba(6,10,22,0.5);color:#e0e8ff;border:1px solid rgba(58,136,232,0.35);outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#3A88E8'" onblur="this.style.borderColor='rgba(58,136,232,0.35)'"/>
+        </div>
+        <div id="login-error" style="color:#F43F5E;font-size:12px;min-height:18px;margin-bottom:12px;"></div>
+        <button id="login-btn"
+          style="width:100%;padding:13px;font-family:'Georgia',serif;font-size:15px;font-weight:bold;
+                 background:linear-gradient(180deg,#024FCB,#023FA2);color:#F8B700;
+                 border:2px solid #3A88E8;cursor:pointer;letter-spacing:3px;text-transform:uppercase;transition:filter 0.15s;"
+          onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='brightness(1)'">
+          ⚔ ENTER ARENA ⚔
+        </button>
+      </div>
+
+      <!-- REGISTER FORM (hidden) -->
+      <div id="register-form" style="display:none;">
+        <div style="margin-bottom:12px;text-align:left;">
+          <label style="color:#F8B700;font-size:11px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;">Username</label>
+          <input id="reg-user" type="text" placeholder="Choose a username" autocomplete="off"
+            style="width:100%;padding:10px 14px;font-family:monospace;font-size:14px;background:rgba(6,10,22,0.5);color:#e0e8ff;border:1px solid rgba(58,136,232,0.35);outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#3A88E8'" onblur="this.style.borderColor='rgba(58,136,232,0.35)'"/>
+        </div>
+        <div style="margin-bottom:12px;text-align:left;">
+          <label style="color:#F8B700;font-size:11px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;">In-Game Name</label>
+          <input id="reg-ingame" type="text" placeholder="Your warrior name (shown in game)"
+            style="width:100%;padding:10px 14px;font-family:monospace;font-size:14px;background:rgba(6,10,22,0.5);color:#e0e8ff;border:1px solid rgba(58,136,232,0.35);outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#3A88E8'" onblur="this.style.borderColor='rgba(58,136,232,0.35)'"/>
+        </div>
+        <div style="margin-bottom:18px;text-align:left;">
+          <label style="color:#F8B700;font-size:11px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;">Password</label>
+          <input id="reg-pass" type="password" placeholder="Choose a password"
+            style="width:100%;padding:10px 14px;font-family:monospace;font-size:14px;background:rgba(6,10,22,0.5);color:#e0e8ff;border:1px solid rgba(58,136,232,0.35);outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#3A88E8'" onblur="this.style.borderColor='rgba(58,136,232,0.35)'"/>
+        </div>
+        <div id="reg-error" style="color:#F43F5E;font-size:12px;min-height:18px;margin-bottom:12px;"></div>
+        <button id="reg-btn"
+          style="width:100%;padding:13px;font-family:'Georgia',serif;font-size:15px;font-weight:bold;
+                 background:linear-gradient(180deg,#027A40,#015C30);color:#F8B700;
+                 border:2px solid #27ae60;cursor:pointer;letter-spacing:3px;text-transform:uppercase;transition:filter 0.15s;"
+          onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='brightness(1)'">
+          ⚔ CREATE ACCOUNT ⚔
+        </button>
+      </div>
+    `;
+
+    overlay.appendChild(panel);
+    this._panel = panel;
+
+    // Tab switching
+    document.getElementById('tab-login').addEventListener('click', () => {
+      Audio.playButton();
+      document.getElementById('login-form').style.display = 'block';
+      document.getElementById('register-form').style.display = 'none';
+      document.getElementById('tab-login').style.background = 'linear-gradient(180deg,#024FCB,#023FA2)';
+      document.getElementById('tab-login').style.color = '#F8B700';
+      document.getElementById('tab-login').style.borderBottom = '2px solid #F8B700';
+      document.getElementById('tab-register').style.background = 'rgba(14,21,32,0.6)';
+      document.getElementById('tab-register').style.color = '#64748B';
+      document.getElementById('tab-register').style.borderBottom = '2px solid transparent';
+    });
+
+    document.getElementById('tab-register').addEventListener('click', () => {
+      Audio.playButton();
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('register-form').style.display = 'block';
+      document.getElementById('tab-register').style.background = 'linear-gradient(180deg,#024FCB,#023FA2)';
+      document.getElementById('tab-register').style.color = '#F8B700';
+      document.getElementById('tab-register').style.borderBottom = '2px solid #F8B700';
+      document.getElementById('tab-login').style.background = 'rgba(14,21,32,0.6)';
+      document.getElementById('tab-login').style.color = '#64748B';
+      document.getElementById('tab-login').style.borderBottom = '2px solid transparent';
+    });
+
+    // Login submit
+    const doLogin = async () => {
+      Audio.playButton();
+      const username = document.getElementById('login-user').value.trim();
+      const password = document.getElementById('login-pass').value;
+      const err = document.getElementById('login-error');
+
+      if (!validateCredentials(username, password)) {
+        err.textContent = '⚠ Username and password cannot be empty!'; return;
+      }
+      err.textContent = 'Logging in...';
+
+      try {
+        const data = await GameAPI.login(username, password);
+        if (data.error) { err.textContent = '⚠ ' + data.error; return; }
+
+        // Store user data in sessionStorage
+        try {
+          sessionStorage.setItem('fhf_username',   data.ingamename || data.username);
+          sessionStorage.setItem('fhf_rawusername', data.username);
+          sessionStorage.setItem('fhf_userdata',   JSON.stringify(data));
+        } catch(e) { window._fhf_userdata = data; }
+
+        // Sync local stats with server data
+        const stats = PlayerStats.get();
+        stats.wins.overall = data.overallwins || 0;
+        stats.wins.easy    = data.easywin    || 0;
+        stats.wins.medium  = data.mediumwin  || 0;
+        stats.wins.hard    = data.hardwin    || 0;
+        stats.avatar       = data.avatar     || 'lapu';
+        stats.coins        = data.coins      || 0;
+        stats.frame        = data.activeframe || 'none';
+        stats.framesOwned  = data.framesowned || ['none'];
+        localStorage.setItem('fhf_stats', JSON.stringify(stats));
+
+        err.textContent = '';
+        this.game.transition(States.HOME);
+      } catch(e) {
+        err.textContent = '⚠ Server offline. Try again.';
+      }
+    };
+
+    document.getElementById('login-btn').addEventListener('click', doLogin);
+    document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+    // Register submit
+    const doRegister = async () => {
+      Audio.playButton();
+      const username  = document.getElementById('reg-user').value.trim();
+      const ingamename= document.getElementById('reg-ingame').value.trim();
+      const password  = document.getElementById('reg-pass').value;
+      const err = document.getElementById('reg-error');
+
+      if (!username || !password || !ingamename) {
+        err.textContent = '⚠ All fields are required!'; return;
+      }
+      err.textContent = 'Creating account...';
+
+      try {
+        const data = await GameAPI.register(username, password, ingamename);
+        if (data.error) { err.textContent = '⚠ ' + data.error; return; }
+
+        err.style.color = '#27ae60';
+        err.textContent = '✓ Account created! You can now login.';
+        // Switch to login tab
+        setTimeout(() => {
+          document.getElementById('tab-login').click();
+          document.getElementById('login-user').value = username;
+        }, 1200);
+      } catch(e) {
+        err.textContent = '⚠ Server offline. Try again.';
+      }
+    };
+
+    document.getElementById('reg-btn').addEventListener('click', doRegister);
+    document.getElementById('reg-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
+  }
+}

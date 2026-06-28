@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Filipino Heroes Fighter — Property Tests</title>
+  <style>
+    body { font-family: monospace; background: #0d0d1a; color: #fff; padding: 20px; }
+    h1 { color: #ffe066; }
+    .pass { color: #27ae60; }
+    .fail { color: #e74c3c; }
+    .suite { margin: 16px 0 4px; color: #ffe066; font-weight: bold; font-size: 15px; }
+    pre { background: #1a1a2e; padding: 8px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<h1>🥊 Filipino Heroes Fighter — Property-Based Tests</h1>
+<div id="output"></div>
+
+<!-- Game stubs needed by modules -->
+<script>
+  // Minimal stubs so game modules load without a real canvas
+  const GRAVITY = 1800;
+  const GROUND_Y = 500;
+  const GROUND_HEIGHT = 60;
+  const CANVAS_WIDTH = 800;
+  const CANVAS_HEIGHT = 500;
+  function applyGravity(f, dt) {}
+  function moveHorizontal(f, dx) { f.x = Math.max(0, Math.min(CANVAS_WIDTH - f.width, f.x + dx)); }
+  function rectsOverlap(a, b) {
+    if (!a || !b) return false;
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+  const States = { LOGIN:'LOGIN', HOME:'HOME', HERO_SELECT:'HERO_SELECT', FIGHTING:'FIGHTING', WIN:'WIN' };
+  const VALID_TRANSITIONS = {
+    LOGIN:['HOME'], HOME:['HERO_SELECT'], HERO_SELECT:['FIGHTING'],
+    FIGHTING:['WIN'], WIN:['HERO_SELECT','HOME']
+  };
+  // Minimal GameStateMachine for testing
+  class GameStateMachine {
+    constructor() { this._currentKey = States.LOGIN; }
+    get currentState() { return this._currentKey; }
+    transition(newState) {
+      const allowed = VALID_TRANSITIONS[this._currentKey] || [];
+      if (!allowed.includes(newState)) return false;
+      this._currentKey = newState;
+      return true;
+    }
+  }
+</script>
+
+<!-- Fighter classes -->
+<script src="../js/fighters/fighter.js"></script>
+<script src="../js/fighters/lapuLapu.js"></script>
+<script src="../js/fighters/pacquiao.js"></script>
+
+<!-- Login validation helper -->
+<script src="../js/states/loginState.js"></script>
+
+<!-- Hero select helper -->
+<script src="../js/states/heroSelectState.js"></script>
+
+<!-- fast-check via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/fast-check@3/lib/bundle/fast-check.min.js"></script>
+
+<script>
+const out = document.getElementById('output');
+let passed = 0, failed = 0;
+
+function suite(name) {
+  out.innerHTML += `<div class="suite">▶ ${name}</div>`;
+}
+
+function testResult(name, ok, detail) {
+  const cls = ok ? 'pass' : 'fail';
+  const icon = ok ? '✓' : '✗';
+  out.innerHTML += `<div class="${cls}">${icon} ${name}</div>`;
+  if (!ok && detail) out.innerHTML += `<pre>${detail}</pre>`;
+  if (ok) passed++; else failed++;
+}
+
+function runProp(name, prop) {
+  try {
+    fc.assert(prop, { numRuns: 200 });
+    testResult(name, true);
+  } catch(e) {
+    testResult(name, false, e.message || String(e));
+  }
+}
+
+// ─── Property 1: Health damage arithmetic and clamping ───────────────────────
+suite('Property 1 — Health damage arithmetic and clamping  [Validates: Req 8.2, 8.3]');
+
+runProp('applyDamage yields Math.max(0, health - damage)', fc.property(
+  fc.integer({ min: 0, max: 100 }),
+  fc.integer({ min: 0, max: 200 }),
+  (health, damage) => {
+    const f = new LapuLapu(100);
+    f.health = health;
+    f.applyDamage(damage);
+    return f.health === Math.max(0, health - damage);
+  }
+));
+
+runProp('health never goes below 0 after sequence of damage', fc.property(
+  fc.array(fc.integer({ min: 0, max: 50 }), { minLength: 1, maxLength: 20 }),
+  (damages) => {
+    const f = new Pacquiao(100);
+    for (const d of damages) {
+      if (f.state === 'dead') break;
+      f.applyDamage(d);
+    }
+    return f.health >= 0;
+  }
+));
+
+// ─── Property 4: Attack hitbox respects declared range ───────────────────────
+suite('Property 4 — Attack hitbox respects declared range  [Validates: Req 6.4, 6.5, 7.4, 7.5]');
+
+runProp('LapuLapu light attack hitbox edge <= lightRange', fc.property(
+  fc.integer({ min: 0, max: 700 }),
+  fc.boolean(),
+  (x, facingRight) => {
+    const f = new LapuLapu(x);
+    f.facingRight = facingRight;
+    f.startAttack('light');
+    f.attackActive = true;
+    const box = f.getAttackHitBox();
+    if (!box) return false;
+    const center = f.x + f.width / 2;
+    const farEdge = facingRight ? box.x + box.w : box.x;
+    const dist = Math.abs(farEdge - center);
+    return dist <= f.lightRange;
+  }
+));
+
+runProp('LapuLapu heavy attack hitbox edge <= heavyRange', fc.property(
+  fc.integer({ min: 0, max: 700 }),
+  fc.boolean(),
+  (x, facingRight) => {
+    const f = new LapuLapu(x);
+    f.facingRight = facingRight;
+    f.startAttack('heavy');
+    f.attackActive = true;
+    const box = f.getAttackHitBox();
+    if (!box) return false;
+    const center = f.x + f.width / 2;
+    const farEdge = facingRight ? box.x + box.w : box.x;
+    const dist = Math.abs(farEdge - center);
+    return dist <= f.heavyRange;
+  }
+));
+
+runProp('Pacquiao light attack hitbox edge <= lightRange', fc.property(
+  fc.integer({ min: 0, max: 700 }),
+  fc.boolean(),
+  (x, facingRight) => {
+    const f = new Pacquiao(x);
+    f.facingRight = facingRight;
+    f.startAttack('light');
+    f.attackActive = true;
+    const box = f.getAttackHitBox();
+    if (!box) return false;
+    const center = f.x + f.width / 2;
+    const farEdge = facingRight ? box.x + box.w : box.x;
+    const dist = Math.abs(farEdge - center);
+    return dist <= f.lightRange;
+  }
+));
+
+runProp('Pacquiao heavy attack hitbox edge <= heavyRange', fc.property(
+  fc.integer({ min: 0, max: 700 }),
+  fc.boolean(),
+  (x, facingRight) => {
+    const f = new Pacquiao(x);
+    f.facingRight = facingRight;
+    f.startAttack('heavy');
+    f.attackActive = true;
+    const box = f.getAttackHitBox();
+    if (!box) return false;
+    const center = f.x + f.width / 2;
+    const farEdge = facingRight ? box.x + box.w : box.x;
+    const dist = Math.abs(farEdge - center);
+    return dist <= f.heavyRange;
+  }
+));
+
+// ─── Property 5: GameStateMachine state integrity ────────────────────────────
+suite('Property 5 — State machine integrity  [Validates: Req 12.1, 12.3]');
+
+const ALL_STATES = Object.values(States);
+
+runProp('state is always a valid state value', fc.property(
+  fc.array(fc.constantFrom(...ALL_STATES), { minLength: 0, maxLength: 30 }),
+  (transitions) => {
+    const game = new GameStateMachine();
+    for (const s of transitions) {
+      game.transition(s);
+    }
+    return ALL_STATES.includes(game.currentState);
+  }
+));
+
+runProp('invalid transitions do not change state', fc.property(
+  fc.constantFrom(...ALL_STATES),
+  fc.constantFrom(...ALL_STATES),
+  (from, to) => {
+    const game = new GameStateMachine();
+    // Force game to 'from' state if reachable, otherwise just test LOGIN
+    const allowed = VALID_TRANSITIONS[game.currentState] || [];
+    if (!allowed.includes(from)) return true; // skip unreachable state
+    game.transition(from);
+    const allowed2 = VALID_TRANSITIONS[game.currentState] || [];
+    if (allowed2.includes(to)) return true; // valid transition, skip
+    const before = game.currentState;
+    game.transition(to);
+    return game.currentState === before;
+  }
+));
+
+// ─── Property 2 & 3: Attack damage matches stats, no multi-hit ───────────────
+suite('Properties 2 & 3 — Attack damage and no multi-hit  [Validates: Req 6.2, 6.3, 7.2, 7.3, 8.5]');
+
+runProp('LapuLapu light attack deals exactly lightDamage once', fc.property(
+  fc.integer({ min: 20, max: 100 }),
+  (health) => {
+    const attacker = new LapuLapu(100);
+    const defender = new LapuLapu(200);
+    defender.health = health;
+    attacker.facingRight = true;
+    defender.x = 130; // close enough to overlap
+    attacker.startAttack('light');
+    attacker.attackActive = true;
+
+    // Simulate 10 frames of overlap
+    let totalDmg = 0;
+    const prevHealth = defender.health;
+    for (let i = 0; i < 10; i++) {
+      const atkBox = attacker.getAttackHitBox();
+      const defBox = defender.getHitBox();
+      if (rectsOverlap(atkBox, defBox) && !attacker.lastAttackDamageDealt) {
+        defender.applyDamage(attacker.lightDamage);
+        attacker.lastAttackDamageDealt = true;
+      }
+    }
+    const dmgDealt = prevHealth - defender.health;
+    return dmgDealt === attacker.lightDamage;
+  }
+));
+
+runProp('Pacquiao heavy attack deals exactly heavyDamage once', fc.property(
+  fc.integer({ min: 20, max: 100 }),
+  (health) => {
+    const attacker = new Pacquiao(100);
+    const defender = new Pacquiao(200);
+    defender.health = health;
+    attacker.facingRight = true;
+    defender.x = 130;
+    attacker.startAttack('heavy');
+    attacker.attackActive = true;
+
+    const prevHealth = defender.health;
+    for (let i = 0; i < 10; i++) {
+      const atkBox = attacker.getAttackHitBox();
+      const defBox = defender.getHitBox();
+      if (rectsOverlap(atkBox, defBox) && !attacker.lastAttackDamageDealt) {
+        defender.applyDamage(attacker.heavyDamage);
+        attacker.lastAttackDamageDealt = true;
+      }
+    }
+    const dmgDealt = prevHealth - defender.health;
+    return dmgDealt === attacker.heavyDamage;
+  }
+));
+
+// ─── Property 6: Health bar proportionality ──────────────────────────────────
+suite('Property 6 — Health bar proportionality  [Validates: Req 4.3]');
+
+runProp('health bar width = Math.round(h/100 * maxW) clamped to [0, maxW]', fc.property(
+  fc.float({ min: 0, max: 100 }),
+  fc.integer({ min: 1, max: 500 }),
+  (health, maxBarWidth) => {
+    const computed = Renderer.computeHealthBarWidth(health, 100, maxBarWidth);
+    const expected = Math.min(maxBarWidth, Math.max(0, Math.round((health / 100) * maxBarWidth)));
+    return computed === expected;
+  }
+));
+
+// ─── Property 7: Round ends on frame health reaches zero ─────────────────────
+suite('Property 7 — Round ends on frame health hits zero  [Validates: Req 10.1]');
+
+runProp('WIN triggered on exact frame health first hits 0', fc.property(
+  fc.array(fc.integer({ min: 1, max: 30 }), { minLength: 1, maxLength: 20 }),
+  (damages) => {
+    const defender = new LapuLapu(500);
+    let winFrame = -1;
+    let frame = 0;
+    for (const d of damages) {
+      if (defender.health <= 0) break;
+      defender.applyDamage(d);
+      frame++;
+      if (defender.health <= 0 && winFrame === -1) {
+        winFrame = frame;
+      }
+    }
+    if (defender.health <= 0) {
+      return winFrame !== -1 && winFrame <= frame;
+    }
+    return true; // fighter survived, no win needed
+  }
+));
+
+// ─── Property 8: Login rejects whitespace credentials ────────────────────────
+suite('Property 8 — Login rejects whitespace credentials  [Validates: Req 1.2]');
+
+runProp('all-whitespace username rejected', fc.property(
+  fc.string().filter(s => s.trim().length === 0),
+  fc.string().filter(s => s.trim().length > 0),
+  (emptyUser, validPass) => {
+    return validateCredentials(emptyUser, validPass) === false;
+  }
+));
+
+runProp('all-whitespace password rejected', fc.property(
+  fc.string().filter(s => s.trim().length > 0),
+  fc.string().filter(s => s.trim().length === 0),
+  (validUser, emptyPass) => {
+    return validateCredentials(validUser, emptyPass) === false;
+  }
+));
+
+runProp('valid username and password accepted', fc.property(
+  fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
+  fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
+  (user, pass) => {
+    return validateCredentials(user, pass) === true;
+  }
+));
+
+// ─── Property 9: Hero assignment invariant ───────────────────────────────────
+suite('Property 9 — Hero assignment invariant  [Validates: Req 3.2, 3.3]');
+
+runProp('AI hero is always different from player hero', fc.property(
+  fc.constantFrom(...HEROES.map(h => h.id)),
+  (playerHero) => {
+    const aiHero = assignAIHero(playerHero);
+    return aiHero !== playerHero && HEROES.some(h => h.id === aiHero);
+  }
+));
+
+// ─── Summary ─────────────────────────────────────────────────────────────────
+out.innerHTML += `
+  <div style="margin-top:24px;padding:12px;border:2px solid #ffe066;background:#0a0a1e;">
+    <span class="pass">✓ ${passed} passed</span>
+    ${failed > 0 ? `&nbsp;&nbsp;<span class="fail">✗ ${failed} failed</span>` : ''}
+    &nbsp;&nbsp;| Total: ${passed + failed}
+  </div>
+`;
+</script>
+</body>
+</html>

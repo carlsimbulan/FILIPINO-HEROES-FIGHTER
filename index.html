@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Filipino Heroes Fighter</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+    #gameCanvas {
+      display: block;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    #ui-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #ui-overlay .ui-panel { pointer-events: all; }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="ui-overlay"></div>
+
+  <script src="js/physics.js"></script>
+  <script>
+    // Catch any script errors and show them on screen
+    window.addEventListener('error', function(e) {
+      document.body.style.color = '#fff';
+      document.body.style.fontFamily = 'monospace';
+      document.body.style.padding = '20px';
+      document.body.style.background = '#1a0000';
+      document.body.innerHTML += '<br><b style="color:#ff4444">JS ERROR:</b> ' + e.message + ' in ' + e.filename + ':' + e.lineno;
+    });
+  </script>
+  <script src="js/particles.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/playerStats.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/frameRenderer.js"></script>
+  <script src="js/fighters/fighter.js"></script>
+  <script src="js/fighters/lapuLapu.js"></script>
+  <script src="js/fighters/pacquiao.js"></script>
+  <script src="js/fighters/antonioLuna.js"></script>
+  <script src="js/fighters/urduja.js"></script>
+  <script src="js/fighters/sultanKudarat.js"></script>
+  <script src="js/fighters/luces.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/assets.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/friendDrawer.js"></script>
+  <script src="js/states/loginState.js"></script>
+  <script src="js/states/homeState.js"></script>
+  <script src="js/states/heroSelectState.js"></script>
+  <script src="js/states/fightState.js"></script>
+  <script src="js/states/winState.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
