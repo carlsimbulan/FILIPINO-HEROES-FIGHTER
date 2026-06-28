@@ -4,183 +4,234 @@ const Renderer = {
   drawBackground(ctx) {
     const W = CANVAS_WIDTH, H = CANVAS_HEIGHT;
     const groundY = GROUND_Y - GROUND_HEIGHT;
+    const t = Date.now() / 1000;
 
-    // ── Sky — warm tropical dusk ──────────────────────────
+    // ── Night sky gradient ────────────────────────────────
     const sky = ctx.createLinearGradient(0, 0, 0, groundY);
-    sky.addColorStop(0,   '#1a0a00');
-    sky.addColorStop(0.3, '#3d1a00');
-    sky.addColorStop(0.6, '#7a3010');
-    sky.addColorStop(1,   '#b85a18');
+    sky.addColorStop(0,   '#00000a');
+    sky.addColorStop(0.4, '#04051a');
+    sky.addColorStop(0.8, '#080820');
+    sky.addColorStop(1,   '#0a0a18');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, groundY);
 
-    // ── Sun / glow on horizon ─────────────────────────────
-    const sunX = W * 0.5, sunY = groundY - 10;
-    const sunGlow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, H * 0.55);
-    sunGlow.addColorStop(0,   'rgba(255,180,60,0.45)');
-    sunGlow.addColorStop(0.35,'rgba(255,100,20,0.18)');
-    sunGlow.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx.fillStyle = sunGlow;
-    ctx.fillRect(0, 0, W, groundY);
+    // ── Twinkling stars ───────────────────────────────────
+    const starSeeds = [
+      [0.08,0.06],[0.15,0.12],[0.22,0.04],[0.31,0.18],[0.38,0.08],
+      [0.44,0.22],[0.52,0.05],[0.58,0.15],[0.65,0.03],[0.71,0.20],
+      [0.79,0.10],[0.85,0.07],[0.91,0.17],[0.96,0.04],[0.12,0.25],
+      [0.27,0.30],[0.48,0.28],[0.63,0.32],[0.77,0.26],[0.93,0.29],
+      [0.05,0.35],[0.19,0.38],[0.35,0.40],[0.55,0.36],[0.72,0.42],
+      [0.88,0.33],[0.42,0.14],[0.67,0.09],[0.83,0.22],[0.03,0.19],
+    ];
+    starSeeds.forEach(function([sx, sy], i) {
+      const twinkle = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.5 + i * 0.9));
+      const size    = i % 5 === 0 ? 2 : 1;
+      ctx.save();
+      ctx.globalAlpha = twinkle;
+      ctx.fillStyle   = i % 7 === 0 ? '#b8d8ff' : i % 4 === 0 ? '#ffe8aa' : '#ffffff';
+      ctx.fillRect(Math.round(sx * W), Math.round(sy * groundY), size, size);
+      ctx.restore();
+    });
 
-    // Sun disc
+    // ── Moon ──────────────────────────────────────────────
+    const moonX = W * 0.82, moonY = groundY * 0.18;
     ctx.save();
-    ctx.shadowColor = '#ffb040';
-    ctx.shadowBlur = 40;
-    ctx.fillStyle = '#ffcc44';
-    ctx.beginPath(); ctx.arc(sunX, sunY, 36, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ffe080';
-    ctx.beginPath(); ctx.arc(sunX, sunY, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowColor = '#aaccff';
+    ctx.shadowBlur  = 28 + 6 * Math.sin(t * 0.5);
+    ctx.fillStyle   = '#ddeeff';
+    ctx.beginPath(); ctx.arc(moonX, moonY, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#c8e4ff';
+    ctx.beginPath(); ctx.arc(moonX, moonY, 16, 0, Math.PI * 2); ctx.fill();
+    // Moon craters (pixel art)
+    ctx.fillStyle = 'rgba(0,0,40,0.18)';
+    ctx.fillRect(moonX - 8, moonY - 4, 5, 4);
+    ctx.fillRect(moonX + 3, moonY + 4, 4, 4);
+    ctx.fillRect(moonX - 2, moonY + 6, 3, 3);
     ctx.restore();
 
-    // ── Distant mountains — warm brown ───────────────────
-    ctx.fillStyle = '#2a0e00';
+    // ── Moonlight glow on horizon ─────────────────────────
+    const moonGlow = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, H * 0.55);
+    moonGlow.addColorStop(0,   'rgba(100,160,255,0.08)');
+    moonGlow.addColorStop(0.4, 'rgba(60,80,180,0.04)');
+    moonGlow.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = moonGlow;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Distant dark castle silhouette ────────────────────
+    ctx.fillStyle = '#050510';
+    // Main tower left
+    ctx.fillRect(W*0.06, groundY-120, 24, 120);
+    ctx.fillRect(W*0.04, groundY-135, 30, 18);
+    ctx.fillRect(W*0.055, groundY-148, 8, 14); // battlement
+    ctx.fillRect(W*0.075, groundY-148, 8, 14);
+    // Main tower right
+    ctx.fillRect(W*0.88, groundY-110, 22, 110);
+    ctx.fillRect(W*0.87, groundY-125, 28, 18);
+    ctx.fillRect(W*0.875, groundY-138, 7, 13);
+    ctx.fillRect(W*0.893, groundY-138, 7, 13);
+    // Castle walls connecting
+    ctx.fillRect(W*0.06, groundY-60, W*0.82, 60);
+    ctx.fillRect(W*0.13, groundY-72, W*0.68, 14);
+    // Battlements on wall
+    for (let bx = W*0.13; bx < W*0.80; bx += 28) {
+      ctx.fillRect(bx, groundY-84, 14, 14);
+    }
+    // Gate arch
+    ctx.fillStyle = '#02020c';
+    ctx.fillRect(W*0.47, groundY-52, 36, 52);
     ctx.beginPath();
-    ctx.moveTo(0, groundY - 60);
-    ctx.lineTo(60,  groundY - 160); ctx.lineTo(140, groundY - 80);
-    ctx.lineTo(200, groundY - 180); ctx.lineTo(280, groundY - 100);
-    ctx.lineTo(360, groundY - 200); ctx.lineTo(440, groundY - 110);
-    ctx.lineTo(510, groundY - 190); ctx.lineTo(580, groundY - 120);
-    ctx.lineTo(650, groundY - 170); ctx.lineTo(720, groundY - 100);
-    ctx.lineTo(W,   groundY - 130); ctx.lineTo(W, groundY); ctx.lineTo(0, groundY);
+    ctx.arc(W*0.47 + 18, groundY-52, 18, Math.PI, 0);
+    ctx.fill();
+    // Windows with faint orange glow
+    const winPositions = [[0.2,0.45],[0.3,0.42],[0.55,0.44],[0.68,0.43],[0.75,0.45]];
+    winPositions.forEach(function([wx,wy]) {
+      const wFlicker = 0.5 + 0.5 * Math.abs(Math.sin(t * 2 + wx * 10));
+      ctx.save();
+      ctx.globalAlpha = 0.35 * wFlicker;
+      ctx.fillStyle   = '#ff9900';
+      ctx.fillRect(Math.round(wx * W), Math.round(wy * groundY), 6, 8);
+      ctx.restore();
+    });
+
+    // ── Mid-ground dark cliffs ────────────────────────────
+    ctx.fillStyle = '#08081a';
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(0, groundY - 55);
+    ctx.lineTo(40, groundY - 90); ctx.lineTo(90, groundY - 65);
+    ctx.lineTo(150, groundY - 100); ctx.lineTo(210, groundY - 70);
+    ctx.lineTo(270, groundY - 88); ctx.lineTo(330, groundY - 55);
+    ctx.lineTo(W - 310, groundY - 72); ctx.lineTo(W - 250, groundY - 95);
+    ctx.lineTo(W - 180, groundY - 68); ctx.lineTo(W - 120, groundY - 88);
+    ctx.lineTo(W - 60, groundY - 60); ctx.lineTo(W, groundY - 78);
+    ctx.lineTo(W, groundY);
     ctx.closePath(); ctx.fill();
 
-    // Mid hills — lighter brown
-    ctx.fillStyle = '#3d1a00';
-    ctx.beginPath();
-    ctx.moveTo(0, groundY - 30);
-    ctx.lineTo(80,  groundY - 120); ctx.lineTo(160, groundY - 60);
-    ctx.lineTo(260, groundY - 140); ctx.lineTo(360, groundY - 70);
-    ctx.lineTo(460, groundY - 130); ctx.lineTo(560, groundY - 65);
-    ctx.lineTo(660, groundY - 110); ctx.lineTo(760, groundY - 50);
-    ctx.lineTo(W,   groundY - 80);  ctx.lineTo(W, groundY); ctx.lineTo(0, groundY);
-    ctx.closePath(); ctx.fill();
+    // ── Animated torch flames ─────────────────────────────
+    this._drawDarkTorch(ctx, 55,         groundY - 55, t);
+    this._drawDarkTorch(ctx, W - 65,     groundY - 55, t);
+    this._drawDarkTorch(ctx, W * 0.28,   groundY - 42, t);
+    this._drawDarkTorch(ctx, W * 0.72,   groundY - 42, t);
 
-    // ── Detailed pixel-art trees ──────────────────────────
-    this._drawTrees(ctx, W, groundY);
+    // ── Animated floating magic particles ────────────────
+    const numPart = 18;
+    for (let i = 0; i < numPart; i++) {
+      const seed  = i * 137.5;
+      const px    = (Math.sin(seed) * 0.5 + 0.5) * W;
+      const baseY = groundY * (0.4 + (i % 5) * 0.1);
+      const py    = baseY - ((t * (8 + i % 4) + seed) % (groundY * 0.5));
+      const pr    = 0.8 + (i % 3) * 0.6;
+      const alpha = Math.max(0, 0.6 - (py / baseY) * 0.5) * (0.5 + 0.5 * Math.sin(t * 3 + seed));
+      const col   = i % 4 === 0 ? '#6644ff' : i % 4 === 1 ? '#0088ff' : i % 4 === 2 ? '#ff4488' : '#44ffcc';
+      ctx.save();
+      ctx.globalAlpha  = alpha * 0.7;
+      ctx.shadowColor  = col;
+      ctx.shadowBlur   = 6;
+      ctx.fillStyle    = col;
+      ctx.beginPath();
+      ctx.arc(px + Math.sin(t * 0.8 + seed) * 12, py, pr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
 
-    // ── Ground — rich brown earth ─────────────────────────
+    // ── Animated fog wisps at ground level ───────────────
+    for (let i = 0; i < 6; i++) {
+      const fx     = (i / 6) * W + Math.sin(t * 0.3 + i * 1.4) * 40;
+      const fw     = 120 + i * 30;
+      const fAlpha = 0.06 + 0.04 * Math.sin(t * 0.6 + i);
+      ctx.save();
+      ctx.globalAlpha = fAlpha;
+      const fogGrad = ctx.createRadialGradient(fx, groundY, 0, fx, groundY, fw * 0.5);
+      fogGrad.addColorStop(0,   '#4466aa');
+      fogGrad.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = fogGrad;
+      ctx.fillRect(fx - fw * 0.5, groundY - 18, fw, 24);
+      ctx.restore();
+    }
+
+    // ── Dark stone ground ─────────────────────────────────
     const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
-    groundGrad.addColorStop(0,   '#6b3010');
-    groundGrad.addColorStop(0.15,'#4a1f08');
-    groundGrad.addColorStop(0.5, '#2e1205');
-    groundGrad.addColorStop(1,   '#1a0a02');
+    groundGrad.addColorStop(0,   '#1a1a2e');
+    groundGrad.addColorStop(0.2, '#13132a');
+    groundGrad.addColorStop(0.6, '#0d0d20');
+    groundGrad.addColorStop(1,   '#080810');
     ctx.fillStyle = groundGrad;
     ctx.fillRect(0, groundY, W, GROUND_HEIGHT);
 
-    // Ground edge highlight
-    ctx.fillStyle = '#8b4818';
-    ctx.fillRect(0, groundY, W, 4);
-    ctx.fillStyle = '#c06020';
+    // Stone edge highlight
+    ctx.fillStyle = '#2a2a44';
+    ctx.fillRect(0, groundY, W, 3);
+    ctx.fillStyle = '#3a3a5a';
     ctx.fillRect(0, groundY, W, 1);
 
-    // Ground tile cracks
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    for (let i = 0; i < W; i += 60) {
-      ctx.fillRect(i, groundY + 4, 2, GROUND_HEIGHT - 4);
+    // Stone tile cracks
+    ctx.fillStyle = 'rgba(0,0,20,0.5)';
+    for (let i = 0; i < W; i += 64) {
+      ctx.fillRect(i, groundY + 3, 2, GROUND_HEIGHT - 3);
     }
-    for (let i = 0; i < W; i += 60) {
-      ctx.fillRect(i + 30, groundY + 20, 1, GROUND_HEIGHT - 20);
+    for (let i = 0; i < W; i += 64) {
+      ctx.fillRect(i + 32, groundY + 22, 1, GROUND_HEIGHT - 22);
     }
-    // Dirt texture dots
-    ctx.fillStyle = 'rgba(200,100,40,0.12)';
-    for (let i = 10; i < W; i += 18) {
-      ctx.fillRect(i, groundY + 8, 3, 3);
-      ctx.fillRect(i + 9, groundY + 16, 2, 2);
+    // Stone texture specks
+    ctx.fillStyle = 'rgba(80,80,120,0.1)';
+    for (let i = 10; i < W; i += 20) {
+      ctx.fillRect(i, groundY + 8, 3, 2);
+      ctx.fillRect(i + 10, groundY + 18, 2, 2);
     }
 
-    // ── Torches ───────────────────────────────────────────
-    this._drawTorch(ctx, 55, groundY - 55);
-    this._drawTorch(ctx, W - 65, groundY - 55);
-    // Extra torches mid-sides
-    this._drawTorch(ctx, Math.round(W * 0.28), groundY - 40);
-    this._drawTorch(ctx, Math.round(W * 0.72), groundY - 40);
-
-    // Arena name
-    ctx.fillStyle = 'rgba(255,180,60,0.18)';
-    ctx.font = 'bold 16px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('⚔  MACTAN ARENA  ⚔', W / 2, groundY - 10);
-    ctx.textAlign = 'left';
-
-    // Vignette edges
-    const vig = ctx.createRadialGradient(W/2, H/2, H*0.3, W/2, H/2, H*0.8);
+    // ── Vignette ──────────────────────────────────────────
+    const vig = ctx.createRadialGradient(W/2, H/2, H*0.25, W/2, H/2, H*0.85);
     vig.addColorStop(0, 'rgba(0,0,0,0)');
-    vig.addColorStop(1, 'rgba(0,0,0,0.45)');
+    vig.addColorStop(1, 'rgba(0,0,15,0.7)');
     ctx.fillStyle = vig;
     ctx.fillRect(0, 0, W, H);
   },
 
-  _drawTrees(ctx, W, groundY) {
-    // Palm / tropical trees with layered pixel art
-    const treePositions = [];
-    for (let x = 0; x < W; x += 55 + Math.round(Math.sin(x * 0.05) * 15)) {
-      treePositions.push(x + 10);
-    }
-    treePositions.forEach(tx => {
-      const h = 70 + Math.round(Math.sin(tx * 0.07) * 25);
-      const w = 8 + Math.round(Math.sin(tx * 0.11) * 3);
-
-      // Trunk
-      ctx.fillStyle = '#2a1008';
-      ctx.fillRect(tx, groundY - h, w, h);
-      ctx.fillStyle = '#3d1a0a';
-      ctx.fillRect(tx + 1, groundY - h, w - 2, h);
-
-      // Foliage layers — dark green tropical
-      const fColors = ['#0d2a0a', '#143d10', '#1a5014', '#0d3a0a'];
-      const layers = [
-        { y: groundY - h - 18, w: 34, h: 22 },
-        { y: groundY - h - 10, w: 44, h: 20 },
-        { y: groundY - h - 2,  w: 38, h: 16 },
-      ];
-      layers.forEach((l, i) => {
-        ctx.fillStyle = fColors[i % fColors.length];
-        ctx.fillRect(tx - (l.w - w) / 2, l.y, l.w, l.h);
-        // lighter inner highlight
-        ctx.fillStyle = fColors[(i + 1) % fColors.length];
-        ctx.fillRect(tx - (l.w - w) / 2 + 4, l.y + 4, l.w - 8, l.h - 8);
-      });
-
-      // Palm fronds (small detail lines)
-      ctx.fillStyle = '#1a6010';
-      ctx.fillRect(tx - 20, groundY - h - 14, 16, 3);
-      ctx.fillRect(tx + w + 4, groundY - h - 16, 14, 3);
-      ctx.fillRect(tx - 12, groundY - h - 22, 10, 3);
-      ctx.fillRect(tx + w, groundY - h - 24, 10, 3);
-    });
-  },
-
-  _drawTorch(ctx, tx, ty) {
-    // Pole
-    ctx.fillStyle = '#4a2e0a';
-    ctx.fillRect(tx - 3, ty, 6, 55);
-    ctx.fillStyle = '#6d4c1a';
-    ctx.fillRect(tx - 2, ty, 4, 55);
-
-    // Bracket
-    ctx.fillStyle = '#888';
+  _drawDarkTorch(ctx, tx, ty, t) {
+    // Stone bracket
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(tx - 3, ty, 6, 42);
+    ctx.fillStyle = '#2a2a44';
+    ctx.fillRect(tx - 2, ty, 4, 42);
+    ctx.fillStyle = '#555577';
     ctx.fillRect(tx - 6, ty - 5, 12, 7);
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = '#666688';
     ctx.fillRect(tx - 5, ty - 4, 10, 3);
 
-    // Fire glow - bigger/brighter
-    const fl = Math.sin(Date.now() / 100) * 4;
+    // Glow pool on ground
+    const glowR = 55 + 8 * Math.sin(t * 2.5 + tx);
     ctx.save();
-    ctx.globalAlpha = 0.25;
-    ctx.fillStyle = '#ff6600';
-    ctx.beginPath(); ctx.arc(tx, ty - 10, 32, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = '#ffff00';
-    ctx.beginPath(); ctx.arc(tx, ty - 10, 55, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.12 + 0.06 * Math.sin(t * 2.5 + tx);
+    const glowGrad = ctx.createRadialGradient(tx, ty - 8, 0, tx, ty - 8, glowR);
+    glowGrad.addColorStop(0,   '#4488ff');
+    glowGrad.addColorStop(0.4, '#2244cc');
+    glowGrad.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(tx - glowR, ty - glowR, glowR * 2, glowR * 2);
     ctx.restore();
 
-    // Flame pixels
-    ctx.fillStyle = '#ff2200'; ctx.fillRect(tx - 5, ty - 10 + fl, 10, 12);
-    ctx.fillStyle = '#ff6600'; ctx.fillRect(tx - 4, ty - 16 + fl, 8, 10);
-    ctx.fillStyle = '#ff9900'; ctx.fillRect(tx - 3, ty - 22 + fl, 6, 10);
-    ctx.fillStyle = '#ffcc00'; ctx.fillRect(tx - 2, ty - 27 + fl, 4, 8);
-    ctx.fillStyle = '#fff8a0'; ctx.fillRect(tx - 1, ty - 31 + fl, 2, 5);
+    // Flame — blue/white magic fire
+    const fl = Math.sin(t * 7 + tx) * 3;
+    const fl2 = Math.sin(t * 5 + tx + 1) * 2;
+    ctx.fillStyle = '#0033cc'; ctx.fillRect(tx - 5, ty - 10 + fl,  10, 11);
+    ctx.fillStyle = '#0055ff'; ctx.fillRect(tx - 4, ty - 17 + fl2, 8,  9);
+    ctx.fillStyle = '#3388ff'; ctx.fillRect(tx - 3, ty - 23 + fl,  6,  8);
+    ctx.fillStyle = '#88bbff'; ctx.fillRect(tx - 2, ty - 28 + fl2, 4,  7);
+    ctx.fillStyle = '#ccddff'; ctx.fillRect(tx - 1, ty - 32 + fl,  2,  5);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(tx,     ty - 34 + fl2, 1,  3);
+
+    // Ember sparks
+    for (let i = 0; i < 3; i++) {
+      const ex    = tx + Math.sin(t * 4 + i * 2.1 + tx) * 5;
+      const ey    = ty - 28 - ((t * 14 + i * 3.3) % 18);
+      const eAlpha= 0.7 - ((t * 14 + i * 3.3) % 18) / 22;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, eAlpha);
+      ctx.fillStyle   = '#88ccff';
+      ctx.fillRect(Math.round(ex), Math.round(ey), 1, 1);
+      ctx.restore();
+    }
   },
 
   drawHealthBars(ctx, p1, p2) {
@@ -248,7 +299,15 @@ const Renderer = {
   },
 
   drawFighter(ctx, fighter) {
+    const scale = 1.55; // make fighters ~55% bigger
+    const cx = fighter.x + fighter.width / 2;
+    const cy = fighter.y + fighter.height;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+    ctx.translate(-cx, -cy);
     fighter.renderSprite(ctx);
+    ctx.restore();
     this.drawStunIndicator(ctx, fighter);
   },
 

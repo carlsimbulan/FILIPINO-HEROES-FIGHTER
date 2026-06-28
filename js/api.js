@@ -115,5 +115,14 @@ const GameAPI = {
       body: JSON.stringify({ username, friendUsername })
     });
     return res.json();
+  },
+
+  async claimQuestCoins(username, coins) {
+    const res = await fetch(API_BASE + '/quests/claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, coins })
+    });
+    return res.json();
   }
 };

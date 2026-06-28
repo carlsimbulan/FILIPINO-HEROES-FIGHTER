@@ -57,7 +57,13 @@ class FriendDrawer {
       'box-shadow:-6px 0 32px rgba(2,79,203,0.25);',
       'display:flex;flex-direction:column;font-family:\'Georgia\',serif;',
       'transform:translateX(100%);transition:transform 0.28s cubic-bezier(.4,0,.2,1);',
+      'pointer-events:all;',
     ].join('');
+
+    // Stop all mouse/touch events inside the drawer from reaching the game canvas
+    this._drawer.addEventListener('mousedown', e => e.stopPropagation());
+    this._drawer.addEventListener('mouseup',   e => e.stopPropagation());
+    this._drawer.addEventListener('click',     e => e.stopPropagation());
 
     // Header
     const hdr = document.createElement('div');
@@ -84,6 +90,7 @@ class FriendDrawer {
     ].join('');
     this._inputEl.addEventListener('focus',() => { this._inputEl.style.borderColor='#3A88E8'; });
     this._inputEl.addEventListener('blur', () => { this._inputEl.style.borderColor='rgba(58,136,232,0.35)'; });
+    this._inputEl.addEventListener('mousedown', e => { e.stopPropagation(); this._inputEl.focus(); });
 
     const addBtn = document.createElement('button');
     addBtn.textContent = 'ADD';

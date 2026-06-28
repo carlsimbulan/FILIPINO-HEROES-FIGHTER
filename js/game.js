@@ -1,12 +1,23 @@
 // game.js — GameStateMachine
 
 const States = {
-  LOGIN: 'LOGIN',
-  HOME: 'HOME',
-  HERO_SELECT: 'HERO_SELECT',
-  FIGHTING: 'FIGHTING',
-  WIN: 'WIN'
+  LOGIN:      'LOGIN',
+  HOME:       'HOME',
+  HERO_SELECT:'HERO_SELECT',
+  FIGHTING:   'FIGHTING',
+  WIN:        'WIN'
 };
+
+// URL path ↔ state mapping
+const STATE_PATHS = {
+  [States.LOGIN]:      '/login',
+  [States.HOME]:       '/home',
+  [States.HERO_SELECT]:'/select',
+  [States.FIGHTING]:   '/battle',
+  [States.WIN]:        '/result'
+};
+const PATH_STATES = {};
+Object.entries(STATE_PATHS).forEach(([s, p]) => { PATH_STATES[p] = s; });
 
 const VALID_TRANSITIONS = {
   [States.LOGIN]:      [States.HOME],
@@ -32,15 +43,37 @@ class GameStateMachine {
       [States.WIN]:        new WinState(this)
     };
 
-    this._current = null;
+    this._current    = null;
     this._currentKey = null;
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', (e) => {
+      const state = (e.state && e.state.gameState) || States.LOGIN;
+      this._enterState(state, e.state && e.state.payload);
+    });
   }
 
+  // Determine which state to start in based on current URL + session
   start() {
-    // Force enter LOGIN without transition validation
-    this._currentKey = States.LOGIN;
-    this._current = this._stateObjects[States.LOGIN];
-    this._current.enter();
+    const path = window.location.pathname;
+    const mapped = PATH_STATES[path];
+    const isLoggedIn = (() => {
+      try { return !!sessionStorage.getItem('fhf_username'); } catch(e) { return false; }
+    })();
+
+    let initialState = States.LOGIN;
+    if (mapped && mapped !== States.LOGIN && isLoggedIn) {
+      // Restore to the mapped state if logged in
+      // FIGHTING and WIN can't be restored meaningfully — fall back to HOME
+      initialState = (mapped === States.FIGHTING || mapped === States.WIN)
+        ? States.HOME
+        : mapped;
+    } else if (!mapped || mapped === States.LOGIN) {
+      initialState = isLoggedIn ? States.HOME : States.LOGIN;
+    }
+
+    this._enterState(initialState);
+    history.replaceState({ gameState: initialState }, '', STATE_PATHS[initialState]);
   }
 
   transition(newState, payload) {
@@ -51,7 +84,17 @@ class GameStateMachine {
     }
     if (this._current && this._current.exit) this._current.exit();
     this._currentKey = newState;
-    this._current = this._stateObjects[newState];
+    this._current    = this._stateObjects[newState];
+    if (this._current && this._current.enter) this._current.enter(payload);
+
+    // Push URL
+    history.pushState({ gameState: newState, payload }, '', STATE_PATHS[newState]);
+  }
+
+  _enterState(stateKey, payload) {
+    if (this._current && this._current.exit) this._current.exit();
+    this._currentKey = stateKey;
+    this._current    = this._stateObjects[stateKey];
     if (this._current && this._current.enter) this._current.enter(payload);
   }
 

@@ -117,10 +117,96 @@ const PlayerStats = (() => {
     return { success: true, coinsLeft: d.coins };
   }
 
+  // ── Daily Quests ───────────────────────────────────────────
+  const QUEST_KEY = 'fhf_quests';
+
+  const QUEST_DEFS = [
+    { id: 'easy3',   label: '3 Wins on Easy',         diff: 'easy',   target: 3, reward: 300  },
+    { id: 'med2row', label: '2 Wins in a Row (Medium)',diff: 'medium', target: 2, reward: 500,  streak: true },
+    { id: 'hard2row',label: '2 Wins in a Row (Hard)',  diff: 'hard',   target: 2, reward: 2500, streak: true },
+  ];
+
+  function _nextReset() {
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(8, 0, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    return next.getTime();
+  }
+
+  function _loadQuests() {
+    try { return JSON.parse(localStorage.getItem(QUEST_KEY)) || null; } catch(e) { return null; }
+  }
+
+  function _saveQuests(q) {
+    try { localStorage.setItem(QUEST_KEY, JSON.stringify(q)); } catch(e) {}
+  }
+
+  function _freshQuests() {
+    const quests = {};
+    QUEST_DEFS.forEach(def => {
+      quests[def.id] = { progress: 0, streak: 0, claimed: false };
+    });
+    return { quests, resetAt: _nextReset() };
+  }
+
+  function checkQuestReset() {
+    let q = _loadQuests();
+    if (!q || Date.now() >= q.resetAt) {
+      q = _freshQuests();
+      _saveQuests(q);
+    }
+    return q;
+  }
+
+  function getQuests() {
+    return checkQuestReset();
+  }
+
+  // Call this after every win — returns array of newly completed quest ids
+  function recordWinForQuests(difficulty) {
+    const q = checkQuestReset();
+    const completed = [];
+    QUEST_DEFS.forEach(def => {
+      const s = q.quests[def.id];
+      if (s.claimed) return;
+      if (def.diff !== difficulty) {
+        // streak quests reset streak on wrong difficulty win
+        if (def.streak) s.streak = 0;
+        return;
+      }
+      if (def.streak) {
+        s.streak = (s.streak || 0) + 1;
+        s.progress = s.streak;
+      } else {
+        s.progress = (s.progress || 0) + 1;
+      }
+      if (s.progress >= def.target) completed.push(def.id);
+    });
+    _saveQuests(q);
+    return completed;
+  }
+
+  // Returns { success, coinsEarned } — does NOT add coins locally (server is source of truth)
+  function claimQuest(questId) {
+    const q = checkQuestReset();
+    const def = QUEST_DEFS.find(d => d.id === questId);
+    const s   = q.quests[questId];
+    if (!def || !s) return { success: false, error: 'Quest not found' };
+    if (s.claimed) return { success: false, error: 'Already claimed' };
+    if (s.progress < def.target) return { success: false, error: 'Not completed yet' };
+    s.claimed = true;
+    _saveQuests(q);
+    return { success: true, coinsEarned: def.reward };
+  }
+
   return {
     get, setAvatar, setFrame, buyFrame, getFrameById,
     recordWin, recordLoss, setMusic, setSfx,
     getLeaderboard, getAvatarById,
-    AVATARS, AVATAR_FRAMES, COINS_PER_WIN
+    AVATARS, AVATAR_FRAMES, COINS_PER_WIN,
+    // Daily quests
+    getQuests, checkQuestReset, recordWinForQuests, claimQuest,
+    QUEST_DEFS
   };
 })();

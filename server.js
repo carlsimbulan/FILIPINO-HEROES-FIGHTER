@@ -37,7 +37,6 @@ MongoClient.connect(MONGO_URI)
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.'));  // serve game files from same folder
 
 // ── Helpers ────────────────────────────────────────────────
 function users()        { return db.collection('users'); }
@@ -214,6 +213,10 @@ app.get('/api/leaderboard', async (req, res) => {
             avatar:      { $ifNull: [{ $arrayElemAt: ['$userdata.avatar', 0] }, 'lapu'] },
             activeframe: { $ifNull: [{ $arrayElemAt: ['$userdata.activeframe', 0] }, 'none'] },
             ingamename:  { $ifNull: [{ $arrayElemAt: ['$userdata.ingamename', 0] }, '$username'] },
+            overallwins: { $ifNull: [{ $arrayElemAt: ['$userdata.overallwins', 0] }, '$overallwins'] },
+            easywin:     { $ifNull: [{ $arrayElemAt: ['$userdata.easywin', 0] }, '$easywin'] },
+            mediumwin:   { $ifNull: [{ $arrayElemAt: ['$userdata.mediumwin', 0] }, '$mediumwin'] },
+            hardwin:     { $ifNull: [{ $arrayElemAt: ['$userdata.hardwin', 0] }, '$hardwin'] },
         }},
         { $project: { userdata: 0 } }
       ]).toArray();
@@ -243,6 +246,7 @@ app.get('/api/user/:username', async (req, res) => {
 // Response: { friends: [...enriched], incoming: [...usernames], outgoing: [...usernames] }
 app.get('/api/friends/:username', async (req, res) => {
   try {
+    if (!db) return res.status(503).json({ error: 'Database not ready' });
     const { username } = req.params;
     if (!username || !username.trim()) {
       return res.status(400).json({ error: 'username required' });
@@ -397,6 +401,36 @@ app.delete('/api/friends/remove', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// ── POST /api/quests/claim ─────────────────────────────────
+app.post('/api/quests/claim', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not ready' });
+    const { username, coins } = req.body;
+    if (!username || !coins) return res.status(400).json({ error: 'username and coins required' });
+    await users().updateOne({ username }, { $inc: { coins: parseInt(coins) } });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Silence Chrome DevTools probe
+app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
+  res.json({});
+});
+
+// SPA fallback — serve index.html for game routes BEFORE static middleware
+// so /login, /home, /select, /battle don't get a 404 from express.static
+const SPA_ROUTES = ['/login', '/home', '/select', '/battle', '/result'];
+SPA_ROUTES.forEach(route => {
+  app.get(route, (req, res) => {
+    res.sendFile('index.html', { root: '.' });
+  });
+});
+
+// Serve static game files — registered AFTER API routes so /api/* is never shadowed
+app.use(express.static('.'));
 
 app.listen(PORT, () => {
   console.log(`Filipino Heroes Fighter server running at http://localhost:${PORT}`);

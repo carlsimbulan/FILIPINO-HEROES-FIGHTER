@@ -157,6 +157,8 @@ class FightState {
           const username = sessionStorage.getItem('fhf_rawusername');
           if (username) GameAPI.recordWin(username, diff).catch(() => {});
         } catch(e) {}
+        // Track daily quest progress
+        PlayerStats.recordWinForQuests(diff);
         // Show coins earned
         FX.ultLabel(p.x + p.width/2, p.y - 20, '+' + coinsEarned + ' 🪙', '#F8B700');
         Audio.playVictory();
