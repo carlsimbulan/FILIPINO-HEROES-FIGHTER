@@ -137,15 +137,17 @@ class HeroSelectState {
         '</div>' +
       '</div>' +
       '<div style="color:#B8D8F8;font-size:11px;margin-bottom:12px;line-height:1.5;padding:0 4px;">' + hero.desc + '</div>' +
-      '<div style="margin-bottom:14px;">' +
+      '<div style="margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:5px;">' +
         hero.skills.map(function(sk) {
-          return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">' +
-            '<span style="display:inline-block;width:20px;height:20px;background:linear-gradient(180deg,#024FCB,#023FA2);border:1px solid #3A88E8;color:#F8B700;font-size:9px;font-weight:bold;text-align:center;line-height:20px;flex-shrink:0;">' + sk.key + '</span>' +
-            '<span style="color:#fff;font-size:11px;">' + sk.name + '</span>' +
+          return '<div style="display:flex;align-items:center;gap:6px;background:rgba(8,14,28,0.6);padding:5px 8px;border:1px solid rgba(58,136,232,0.15);">' +
+            '<span style="display:inline-block;width:18px;height:18px;background:linear-gradient(180deg,#024FCB,#023FA2);border:1px solid #3A88E8;color:#F8B700;font-size:9px;font-weight:bold;text-align:center;line-height:18px;flex-shrink:0;">' + sk.key + '</span>' +
+            '<span style="color:#fff;font-size:10px;">' + sk.name + '</span>' +
           '</div>';
         }).join('') +
       '</div>' +
-      '<button id="hs-confirm" style="width:100%;padding:14px;font-family:\'Georgia\',serif;font-size:14px;font-weight:bold;background:linear-gradient(180deg,#024FCB,#023FA2);color:#F8B700;border:2px solid #3A88E8;cursor:pointer;letter-spacing:3px;" onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'brightness(1)\'">⚔ ENTER BATTLE ⚔</button>';
+      '<div style="text-align:center;">' +
+      '<button id="hs-confirm" style="display:inline-block;padding:11px 36px;font-family:\'Georgia\',serif;font-size:13px;font-weight:bold;background:linear-gradient(180deg,#024FCB,#023FA2);color:#F8B700;border:2px solid #3A88E8;cursor:pointer;letter-spacing:3px;" onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'brightness(1)\'">⚔ ENTER BATTLE ⚔</button>' +
+      '</div>';
 
     document.getElementById('hs-confirm').addEventListener('click', () => {
       Audio.playButton();

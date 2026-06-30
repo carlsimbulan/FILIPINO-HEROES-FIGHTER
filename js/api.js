@@ -124,5 +124,20 @@ const GameAPI = {
       body: JSON.stringify({ username, coins })
     });
     return res.json();
+  },
+
+  // ── PVP ──────────────────────────────────────────────────
+  async recordPVPWin(username) {
+    const res = await fetch(API_BASE + '/pvp/win', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username })
+    });
+    return res.json();
+  },
+
+  async getPVPLeaderboard() {
+    const res = await fetch(API_BASE + '/leaderboard/pvp');
+    return res.json();
   }
 };

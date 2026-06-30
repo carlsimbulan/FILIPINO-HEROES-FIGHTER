@@ -1,30 +1,36 @@
 // game.js — GameStateMachine
 
 const States = {
-  LOGIN:      'LOGIN',
-  HOME:       'HOME',
-  HERO_SELECT:'HERO_SELECT',
-  FIGHTING:   'FIGHTING',
-  WIN:        'WIN'
+  LOGIN:       'LOGIN',
+  HOME:        'HOME',
+  HERO_SELECT: 'HERO_SELECT',
+  FIGHTING:    'FIGHTING',
+  WIN:         'WIN',
+  PVP_LOBBY:   'PVP_LOBBY',
+  PVP_FIGHTING:'PVP_FIGHTING'
 };
 
 // URL path ↔ state mapping
 const STATE_PATHS = {
-  [States.LOGIN]:      '/login',
-  [States.HOME]:       '/home',
-  [States.HERO_SELECT]:'/select',
-  [States.FIGHTING]:   '/battle',
-  [States.WIN]:        '/result'
+  [States.LOGIN]:       '/login',
+  [States.HOME]:        '/home',
+  [States.HERO_SELECT]: '/select',
+  [States.FIGHTING]:    '/battle',
+  [States.WIN]:         '/result',
+  [States.PVP_LOBBY]:   '/pvp-lobby',
+  [States.PVP_FIGHTING]:'/pvp-battle'
 };
 const PATH_STATES = {};
 Object.entries(STATE_PATHS).forEach(([s, p]) => { PATH_STATES[p] = s; });
 
 const VALID_TRANSITIONS = {
-  [States.LOGIN]:      [States.HOME],
-  [States.HOME]:       [States.HERO_SELECT],
-  [States.HERO_SELECT]:[States.FIGHTING, States.HOME],
-  [States.FIGHTING]:   [States.WIN],
-  [States.WIN]:        [States.HERO_SELECT, States.HOME]
+  [States.LOGIN]:       [States.HOME],
+  [States.HOME]:        [States.HERO_SELECT, States.PVP_LOBBY],
+  [States.HERO_SELECT]: [States.FIGHTING, States.HOME],
+  [States.FIGHTING]:    [States.WIN],
+  [States.WIN]:         [States.HERO_SELECT, States.HOME],
+  [States.PVP_LOBBY]:   [States.PVP_FIGHTING, States.HOME],
+  [States.PVP_FIGHTING]:[States.WIN]
 };
 
 class GameStateMachine {
@@ -36,11 +42,13 @@ class GameStateMachine {
     this._input = new InputHandler();
 
     this._stateObjects = {
-      [States.LOGIN]:      new LoginState(this),
-      [States.HOME]:       new HomeState(this),
-      [States.HERO_SELECT]:new HeroSelectState(this),
-      [States.FIGHTING]:   new FightState(this, this._input),
-      [States.WIN]:        new WinState(this)
+      [States.LOGIN]:       new LoginState(this),
+      [States.HOME]:        new HomeState(this),
+      [States.HERO_SELECT]: new HeroSelectState(this),
+      [States.FIGHTING]:    new FightState(this, this._input),
+      [States.WIN]:         new WinState(this),
+      [States.PVP_LOBBY]:   new PVPLobbyState(this),
+      [States.PVP_FIGHTING]:new PVPFightState(this, this._input)
     };
 
     this._current    = null;
@@ -65,7 +73,7 @@ class GameStateMachine {
     if (mapped && mapped !== States.LOGIN && isLoggedIn) {
       // Restore to the mapped state if logged in
       // FIGHTING and WIN can't be restored meaningfully — fall back to HOME
-      initialState = (mapped === States.FIGHTING || mapped === States.WIN)
+      initialState = (mapped === States.FIGHTING || mapped === States.WIN || mapped === States.PVP_FIGHTING || mapped === States.PVP_LOBBY)
         ? States.HOME
         : mapped;
     } else if (!mapped || mapped === States.LOGIN) {

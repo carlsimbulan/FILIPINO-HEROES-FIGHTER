@@ -223,6 +223,19 @@ class FriendDrawer {
       '<div style="color:#64748B;font-size:10px;">🏆 ' + (friend.overallwins || 0) + ' wins</div>';
     row.appendChild(info);
 
+    // Challenge button — only shown when PVPClient is connected
+    if (typeof PVPClient !== 'undefined' && PVPClient.socket && PVPClient.socket.connected) {
+      const challengeBtn = document.createElement('button');
+      challengeBtn.textContent = '⚔';
+      challengeBtn.title = 'Challenge to PVP';
+      challengeBtn.className = 'pvp-challenge-btn';
+      challengeBtn.style.cssText = 'background:rgba(248,183,0,0.08);border:1px solid rgba(248,183,0,0.4);color:#F8B700;font-size:12px;padding:3px 7px;cursor:pointer;flex-shrink:0;transition:all 0.15s;';
+      challengeBtn.onmouseover = () => { challengeBtn.style.background = 'rgba(248,183,0,0.2)'; };
+      challengeBtn.onmouseout  = () => { challengeBtn.style.background = 'rgba(248,183,0,0.08)'; };
+      challengeBtn.addEventListener('click', () => this._onChallenge(friend));
+      row.appendChild(challengeBtn);
+    }
+
     const rmBtn = document.createElement('button');
     rmBtn.textContent = '✕';
     rmBtn.title = 'Remove friend';
@@ -307,6 +320,112 @@ class FriendDrawer {
       if (res.success) await this._loadAndRender();
       else this._showMsg(res.error || 'Failed.', '#e74c3c');
     } catch (e) { this._showMsg('Server error.', '#e74c3c'); }
+  }
+
+  _onChallenge(friend) {
+    if (typeof PVPClient === 'undefined' || !PVPClient.socket || !PVPClient.socket.connected) {
+      this._showMsg('PVP not available.', '#e74c3c');
+      return;
+    }
+
+    // Disable all challenge buttons while invite is pending
+    const allBtns = this._body.querySelectorAll('.pvp-challenge-btn');
+    allBtns.forEach(b => { b.disabled = true; b.style.opacity = '0.4'; });
+
+    this._showMsg('Invite sent to ' + this._esc(friend.ingamename || friend.username) + '…', '#F8B700');
+
+    PVPClient.sendInvite(friend.username, {
+      onDeclined: () => {
+        this._restoreChallengeBtns();
+        this._showMsg(this._esc(friend.ingamename || friend.username) + ' declined.', '#e74c3c');
+      },
+      onExpired: () => {
+        this._restoreChallengeBtns();
+        this._showMsg('Invite expired.', '#94A3B8');
+      },
+      onError: (data) => {
+        this._restoreChallengeBtns();
+        const msgs = { offline: 'Friend is offline.', already_in_session: 'You are already in a match.', target_in_session: 'Friend is already in a match.' };
+        this._showMsg(msgs[data && data.reason] || 'Could not send invite.', '#e74c3c');
+      }
+    });
+  }
+
+  _restoreChallengeBtns() {
+    if (!this._body) return;
+    const allBtns = this._body.querySelectorAll('.pvp-challenge-btn');
+    allBtns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+  }
+
+  _showToast(msg, color) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:rgba(8,14,28,0.95);border:1px solid ' + (color || '#3A88E8') + ';color:' + (color || '#B8D8F8') + ';padding:10px 22px;font-family:Georgia,serif;font-size:13px;z-index:9999;pointer-events:none;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 3000);
+  }
+
+  // Called from HomeState.enter() to wire up incoming invite notifications
+  listenForInvites(game) {
+    if (typeof PVPClient === 'undefined' || !PVPClient.socket) return;
+    this._pvpInviteHandler = ({ roomId, inviterUsername }) => {
+      this._showInviteModal(roomId, inviterUsername, game);
+    };
+    PVPClient.on('pvp:invite', this._pvpInviteHandler);
+  }
+
+  stopListeningForInvites() {
+    if (typeof PVPClient !== 'undefined' && this._pvpInviteHandler) {
+      PVPClient.off('pvp:invite', this._pvpInviteHandler);
+      this._pvpInviteHandler = null;
+    }
+  }
+
+  _showInviteModal(roomId, inviterUsername, game) {
+    // Remove any existing invite modal
+    const existing = document.getElementById('pvp-invite-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'pvp-invite-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:2000;pointer-events:all;';
+    modal.innerHTML =
+      '<div style="background:linear-gradient(180deg,#141e30,#0a0e18);border:2px solid rgba(248,183,0,0.4);box-shadow:0 0 60px rgba(248,183,0,0.2);padding:28px 36px;font-family:Georgia,serif;text-align:center;min-width:320px;">' +
+        '<div style="color:#F8B700;font-size:16px;font-weight:bold;margin-bottom:10px;">⚔ PVP CHALLENGE</div>' +
+        '<div style="color:#B8D8F8;font-size:13px;margin-bottom:20px;"><span style="color:#fff;font-weight:bold;">' + this._esc(inviterUsername) + '</span> challenged you to a fight!</div>' +
+        '<div style="display:flex;gap:12px;justify-content:center;">' +
+          '<button id="pvp-accept-btn" style="padding:10px 24px;font-family:Georgia,serif;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#27ae60,#1e8449);color:#fff;border:1px solid #27ae60;cursor:pointer;letter-spacing:2px;">ACCEPT</button>' +
+          '<button id="pvp-decline-btn" style="padding:10px 24px;font-family:Georgia,serif;font-size:12px;font-weight:bold;background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.5);cursor:pointer;letter-spacing:2px;">DECLINE</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+
+    const removeModal = () => { if (modal.parentNode) modal.parentNode.removeChild(modal); };
+
+    modal.querySelector('#pvp-accept-btn').addEventListener('click', () => {
+      removeModal();
+      if (typeof PVPClient !== 'undefined') {
+        PVPClient.socket.emit('pvp:accept', { roomId });
+      }
+      if (game && typeof States !== 'undefined') {
+        game.transition(States.PVP_LOBBY);
+      }
+    });
+
+    modal.querySelector('#pvp-decline-btn').addEventListener('click', () => {
+      removeModal();
+      if (typeof PVPClient !== 'undefined') {
+        PVPClient.socket.emit('pvp:decline', { roomId });
+      }
+    });
+
+    // Auto-dismiss if server sends pvp:expired or pvp:cancelled
+    const onDismiss = () => { removeModal(); };
+    if (typeof PVPClient !== 'undefined') {
+      PVPClient.socket.once('pvp:expired',   onDismiss);
+      PVPClient.socket.once('pvp:cancelled', onDismiss);
+    }
   }
 
   _esc(str) {

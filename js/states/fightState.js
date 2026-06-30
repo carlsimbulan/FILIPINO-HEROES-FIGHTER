@@ -280,12 +280,12 @@ class FightState {
       { key: 'c', label: 'C', name: 'BLOCK',   cd: p.skills.c.cd, cdMax: p.skills.c.cdMax },
     ];
     const ultDef    = { label: 'V', name: 'ULTIMATE', used: p.skills.ult.used };
-    const flickerDef = { label: 'R', name: 'FLICKER', cd: 0, cdMax: 0, isFlicker: true };
+    const flickerDef = { label: 'R', name: 'FLICKER', cd: p._flickerCd || 0, cdMax: 10, isFlicker: true };
 
     [...skillDefs, ultDef, flickerDef].forEach((sk, i) => {
       const bx = startX + i * (boxW + gap);
       const by = baseY;
-      const onCd   = sk.isFlicker ? false : (sk.cd > 0 || sk.used);
+      const onCd   = sk.isFlicker ? (sk.cd > 0) : (sk.cd > 0 || sk.used);
       const active = sk.isFlicker ? false : (sk.key ? p.skills[sk.key].active : p.skills.ult.active);
 
       // background

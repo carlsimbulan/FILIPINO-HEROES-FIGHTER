@@ -26,12 +26,26 @@ class HomeState {
     this._username    = username;
     this._rawUsername = rawUsername || username;
     this._friendDrawer = new FriendDrawer(this._rawUsername);
+
+    // Connect PVPClient and wire up incoming invite listener
+    if (typeof PVPClient !== 'undefined') {
+      PVPClient.connect(this._rawUsername, this.game);
+      // Delay listening slightly so socket has time to auth
+      setTimeout(() => {
+        if (this._friendDrawer) this._friendDrawer.listenForInvites(this.game);
+      }, 300);
+    }
+
     this._buildUI();
   }
 
   exit() {
     this._closeModal();
-    if (this._friendDrawer) { this._friendDrawer.destroy(); this._friendDrawer = null; }
+    if (this._friendDrawer) {
+      this._friendDrawer.stopListeningForInvites();
+      this._friendDrawer.destroy();
+      this._friendDrawer = null;
+    }
     if (this._panel && this._panel.parentNode) this._panel.parentNode.removeChild(this._panel);
     this._panel = null;
     const qp = document.getElementById('quest-panel');
@@ -149,8 +163,10 @@ class HomeState {
 
     const center = document.createElement('div');
     center.style.cssText = 'background:rgba(8,14,28,0.15);border:1px solid rgba(184,216,248,0.25);box-shadow:0 8px 40px rgba(2,79,203,0.15);padding:28px 48px;text-align:center;font-family:\'Georgia\',serif;pointer-events:all;min-width:320px;';
-    center.innerHTML = '<button id="home-start-btn" style="width:100%;padding:14px;font-family:\'Georgia\',serif;font-size:16px;font-weight:bold;background:linear-gradient(180deg,#024FCB,#023FA2);color:#F8B700;border:2px solid #3A88E8;cursor:pointer;letter-spacing:3px;text-transform:uppercase;transition:filter 0.15s;"' +
-      ' onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'brightness(1)\'">\u2694 START BATTLE \u2694</button>';
+    center.innerHTML =
+      '<button id="home-start-btn" style="width:100%;padding:14px;font-family:\'Georgia\',serif;font-size:16px;font-weight:bold;background:linear-gradient(180deg,#024FCB,#023FA2);color:#F8B700;border:2px solid #3A88E8;cursor:pointer;letter-spacing:3px;text-transform:uppercase;transition:filter 0.15s;" onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'brightness(1)\'">🤖 VS AI</button>' +
+      '<div style="margin-top:10px;color:#2a4060;font-size:10px;letter-spacing:1px;">── OR ──</div>' +
+      '<button id="home-pvp-btn" style="width:100%;margin-top:10px;padding:14px;font-family:\'Georgia\',serif;font-size:16px;font-weight:bold;background:linear-gradient(180deg,#6b1a6b,#4a0e4a);color:#F8B700;border:2px solid rgba(248,183,0,0.6);cursor:pointer;letter-spacing:3px;text-transform:uppercase;transition:filter 0.15s;" onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'brightness(1)\'">⚔ PVP</button>';
 
     // ── Daily Quests panel (left side) ────────────────────
     const questPanel = document.createElement('div');
@@ -165,6 +181,14 @@ class HomeState {
     this._panel = wrapper;
 
     center.querySelector('#home-start-btn').addEventListener('click', () => { Audio.playButton(); this.game.transition(States.HERO_SELECT); });
+    center.querySelector('#home-pvp-btn').addEventListener('click', () => {
+      Audio.playButton();
+      if (this._friendDrawer) {
+        this._friendDrawer.open();
+        // Show a toast hint inside the drawer area
+        this._showPVPHint();
+      }
+    });
     profileBtn.addEventListener('click', () => { Audio.playButton(); this._openProfileModal(); });
     lbBtn.addEventListener('click', () => { Audio.playButton(); this._openLeaderboardModal(); });
     settingsBtn.addEventListener('click', () => { Audio.playButton(); this._openSettingsModal(); });
@@ -265,20 +289,75 @@ class HomeState {
   _openLeaderboardModal() {
     var self = this;
     var activeTab = 'overall';
-    var tabsHtml = ['overall','easy','medium','hard'].map(function(t) {
+    var allTabs = ['overall','easy','medium','hard','pvp'];
+    var tabsHtml = allTabs.map(function(t) {
       var isActive = t === 'overall';
+      var label = t === 'pvp' ? '⚔ PVP' : t.toUpperCase();
       return '<button class="lb-tab" data-tab="' + t + '" style="padding:7px 14px;font-family:\'Georgia\',serif;font-size:11px;font-weight:bold;' +
         'background:' + (isActive ? 'linear-gradient(180deg,#024FCB,#023FA2)' : 'rgba(14,21,32,0.7)') + ';' +
         'color:' + (isActive ? '#F8B700' : '#64748B') + ';' +
         'border:1px solid ' + (isActive ? '#3A88E8' : '#1a3060') + ';cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all 0.15s;">' +
-        t.toUpperCase() + '</button>';
+        label + '</button>';
     }).join('');
     var m = this._createModal(
       '<div style="color:#F8B700;font-size:18px;font-weight:bold;margin-bottom:16px;text-align:center;">\uD83C\uDFC6 LEADERBOARD</div>' +
-      '<div id="lb-tabs" style="display:flex;gap:6px;margin-bottom:16px;justify-content:center;">' + tabsHtml + '</div>' +
+      '<div id="lb-tabs" style="display:flex;gap:6px;margin-bottom:16px;justify-content:center;flex-wrap:wrap;">' + tabsHtml + '</div>' +
       '<div id="lb-body" style="background:rgba(8,14,28,0.6);border:1px solid rgba(58,136,232,0.2);padding:14px;min-height:80px;"></div>'
     );
+
+    var renderPVPLB = function() {
+      var body = document.getElementById('lb-body');
+      if (!body) return;
+      body.innerHTML = '<div style="color:#64748B;text-align:center;padding:16px;">Loading...</div>';
+      var header = '<div style="display:grid;grid-template-columns:36px 1fr 60px 60px 60px;gap:8px;color:#64748B;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid rgba(58,136,232,0.15);margin-bottom:8px;">' +
+        '<span>#</span><span>PLAYER</span><span style="text-align:center;">WINS</span><span style="text-align:center;">LOSSES</span><span style="text-align:center;">RANK</span></div>';
+      GameAPI.getPVPLeaderboard().then(function(rows) {
+        if (!rows || rows.error || rows.length === 0) {
+          body.innerHTML = header + '<div style="color:#64748B;text-align:center;padding:16px;">No PVP battles yet. Challenge a friend!</div>'; return;
+        }
+        var rowsHtml = rows.map(function(r, i) {
+          var wins   = r.pvpwins   || 0;
+          var losses = r.pvplosses || 0;
+          var rankColor = i === 0 ? '#F8B700' : i === 1 ? '#94A3B8' : i === 2 ? '#c0824a' : '#64748B';
+          var av = PlayerStats.getAvatarById(r.avatar || 'lapu');
+          var frameId = r.activeframe || 'none';
+          var frameObj = PlayerStats.getFrameById(frameId);
+          var total = wins + losses;
+          var winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+          return '<div style="display:grid;grid-template-columns:36px 1fr 60px 60px 60px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(58,136,232,0.08);">' +
+            '<span style="color:' + rankColor + ';font-weight:bold;text-align:center;">' + (i+1) + '</span>' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+              '<div style="position:relative;width:32px;height:32px;flex-shrink:0;">' +
+                '<img src="' + av.src + '" style="position:absolute;top:2px;left:2px;width:28px;height:28px;object-fit:cover;object-position:top;z-index:1;"/>' +
+                '<canvas class="lb-frame-canvas" data-frame="' + frameId + '" width="32" height="32" style="position:absolute;top:0;left:0;z-index:2;pointer-events:none;"></canvas>' +
+              '</div>' +
+              '<div>' +
+                '<div style="color:#fff;font-size:11px;font-weight:bold;">' + (r.ingamename || r.username) + '</div>' +
+                '<div style="color:#64748B;font-size:9px;">' + winRate + '% win rate</div>' +
+              '</div>' +
+            '</div>' +
+            '<span style="color:#27ae60;font-weight:bold;text-align:center;">' + wins + '</span>' +
+            '<span style="color:#e74c3c;font-weight:bold;text-align:center;">' + losses + '</span>' +
+            '<span style="color:' + rankColor + ';text-align:center;">' + (i===0?'👑':i===1?'🥈':i===2?'🥉':'#'+(i+1)) + '</span>' +
+          '</div>';
+        }).join('');
+        body.innerHTML = header + rowsHtml;
+        var animLB = function() {
+          var canvases = body.querySelectorAll('.lb-frame-canvas');
+          canvases.forEach(function(c) {
+            var fCtx = c.getContext('2d'); fCtx.clearRect(0,0,32,32);
+            FrameRenderer.drawFrame(fCtx, c.dataset.frame || 'none', 0, 0, 32);
+          });
+          if (body.querySelectorAll('.lb-frame-canvas').length) requestAnimationFrame(animLB);
+        };
+        animLB();
+      }).catch(function() {
+        body.innerHTML = '<div style="color:#e74c3c;text-align:center;padding:16px;">Could not load PVP leaderboard.</div>';
+      });
+    };
+
     var renderLB = function(tab) {
+      if (tab === 'pvp') { renderPVPLB(); return; }
       var body = document.getElementById('lb-body');
       if (!body) return;
       body.innerHTML = '<div style="color:#64748B;text-align:center;padding:16px;">Loading...</div>';
@@ -312,7 +391,6 @@ class HomeState {
           '</div>';
         }).join('');
         body.innerHTML = header + rowsHtml;
-        // Row click → show player profile
         body.querySelectorAll('.lb-row').forEach(function(row) {
           row.addEventListener('click', function() {
             Audio.playButton();
@@ -328,12 +406,10 @@ class HomeState {
             });
           });
         });
-        // Animate frames on leaderboard avatars
         var animLB = function() {
           var canvases = body.querySelectorAll('.lb-frame-canvas');
           canvases.forEach(function(c) {
-            var fCtx = c.getContext('2d');
-            fCtx.clearRect(0,0,32,32);
+            var fCtx = c.getContext('2d'); fCtx.clearRect(0,0,32,32);
             FrameRenderer.drawFrame(fCtx, c.dataset.frame || 'none', 0, 0, 32);
           });
           if (body.querySelector('.lb-row')) requestAnimationFrame(animLB);
@@ -632,6 +708,38 @@ class HomeState {
         if (coinEl) coinEl.innerHTML = '🏆 ' + s2.wins.overall + ' wins &nbsp;|&nbsp; <span style="color:#F8B700;">🪙 ' + (s2.coins||0) + '</span>';
       });
     });
+  }
+
+  _showPVPHint() {
+    // Remove any existing hint
+    const existing = document.getElementById('pvp-hint-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'pvp-hint-toast';
+    toast.style.cssText = [
+      'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);',
+      'background:linear-gradient(180deg,rgba(107,26,107,0.97),rgba(74,14,74,0.97));',
+      'border:1px solid rgba(248,183,0,0.5);',
+      'box-shadow:0 4px 24px rgba(248,183,0,0.2);',
+      'color:#F8B700;font-family:Georgia,serif;font-size:13px;',
+      'padding:12px 24px;letter-spacing:1px;',
+      'z-index:1200;pointer-events:none;',
+      'animation:pvp-toast-in 0.3s ease;',
+    ].join('');
+    toast.innerHTML = '⚔ Challenge a friend — click <b style="color:#fff;">⚔</b> next to their name!';
+
+    // Inject keyframe if not already there
+    if (!document.getElementById('pvp-toast-style')) {
+      const s = document.createElement('style');
+      s.id = 'pvp-toast-style';
+      s.textContent = '@keyframes pvp-toast-in{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+      document.head.appendChild(s);
+    }
+
+    document.body.appendChild(toast);
+    // Auto-dismiss after 4s
+    setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
   }
 
   _escapeHtml(str) {

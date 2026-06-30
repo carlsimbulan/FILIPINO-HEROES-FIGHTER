@@ -1,10 +1,13 @@
 // server.js — Filipino Heroes Fighter backend
 require('dotenv').config();
 
+const http     = require('http');
 const express  = require('express');
 const cors     = require('cors');
 const bcrypt   = require('bcryptjs');
 const { MongoClient } = require('mongodb');
+const { Server } = require('socket.io');
+const { initPVP } = require('./pvpManager');
 
 const app  = express();
 const PORT = 3000;
@@ -29,6 +32,17 @@ MongoClient.connect(MONGO_URI)
     // Ensure unique index on friends collection (one doc per user)
     await db.collection('friends').createIndex({ username: 1 }, { unique: true });
     console.log('Index ensured: friends.username (unique)');
+    // Migration: add pvpwins:0 to users that don't have it
+    await db.collection('users').updateMany(
+      { pvpwins: { $exists: false } },
+      { $set: { pvpwins: 0 } }
+    );
+    // Migration: add pvplosses:0 to users that don't have it
+    await db.collection('users').updateMany(
+      { pvplosses: { $exists: false } },
+      { $set: { pvplosses: 0 } }
+    );
+    console.log('Migration complete: pvpwins/pvplosses fields ensured on all users');
   })
   .catch(err => {
     console.error('MongoDB connection failed:', err.message);
@@ -137,6 +151,71 @@ app.post('/api/stats/win', async (req, res) => {
     await leaderboards().updateOne({ username }, { $inc: { overallwins: 1, [field]: 1 } }, { upsert: true });
 
     res.json({ success: true, coinsEarned: coins });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── POST /api/pvp/win ──────────────────────────────────────
+// Called by the server-side pvpManager to record a PVP win (and the loser's loss).
+app.post('/api/pvp/win', async (req, res) => {
+  try {
+    const { username, loserUsername } = req.body;
+    if (!username) return res.status(400).json({ error: 'username required' });
+
+    const user = await users().findOne({ username });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Record winner
+    await users().updateOne({ username }, { $inc: { pvpwins: 1, overallwins: 1 } });
+    await leaderboards().updateOne(
+      { username },
+      { $inc: { pvpwins: 1, overallwins: 1 } },
+      { upsert: true }
+    );
+
+    // Record loser's loss if provided
+    if (loserUsername) {
+      await users().updateOne({ username: loserUsername }, { $inc: { pvplosses: 1 } });
+      await leaderboards().updateOne(
+        { username: loserUsername },
+        { $inc: { pvplosses: 1 } },
+        { upsert: true }
+      );
+    }
+
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── GET /api/leaderboard/pvp ───────────────────────────────
+// Returns top 20 players sorted by pvpwins, with pvplosses shown
+app.get('/api/leaderboard/pvp', async (req, res) => {
+  try {
+    const rows = await leaderboards()
+      .aggregate([
+        { $match: { pvpwins: { $gt: 0 } } },
+        { $sort: { pvpwins: -1 } },
+        { $limit: 20 },
+        { $lookup: {
+            from: 'users',
+            localField: 'username',
+            foreignField: 'username',
+            as: 'userdata'
+        }},
+        { $addFields: {
+            avatar:      { $ifNull: [{ $arrayElemAt: ['$userdata.avatar', 0] }, 'lapu'] },
+            activeframe: { $ifNull: [{ $arrayElemAt: ['$userdata.activeframe', 0] }, 'none'] },
+            ingamename:  { $ifNull: [{ $arrayElemAt: ['$userdata.ingamename', 0] }, '$username'] },
+            pvpwins:     { $ifNull: [{ $arrayElemAt: ['$userdata.pvpwins', 0] }, '$pvpwins'] },
+            pvplosses:   { $ifNull: [{ $arrayElemAt: ['$userdata.pvplosses', 0] }, 0] },
+        }},
+        { $project: { userdata: 0 } }
+      ]).toArray();
+
+    res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -422,7 +501,7 @@ app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
 
 // SPA fallback — serve index.html for game routes BEFORE static middleware
 // so /login, /home, /select, /battle don't get a 404 from express.static
-const SPA_ROUTES = ['/login', '/home', '/select', '/battle', '/result'];
+const SPA_ROUTES = ['/login', '/home', '/select', '/battle', '/result', '/pvp-lobby', '/pvp-battle'];
 SPA_ROUTES.forEach(route => {
   app.get(route, (req, res) => {
     res.sendFile('index.html', { root: '.' });
@@ -432,7 +511,11 @@ SPA_ROUTES.forEach(route => {
 // Serve static game files — registered AFTER API routes so /api/* is never shadowed
 app.use(express.static('.'));
 
-app.listen(PORT, () => {
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, { cors: { origin: '*' } });
+initPVP(io, () => db);
+
+httpServer.listen(PORT, () => {
   console.log(`Filipino Heroes Fighter server running at http://localhost:${PORT}`);
   console.log(`Open http://localhost:${PORT} in your browser to play`);
 });

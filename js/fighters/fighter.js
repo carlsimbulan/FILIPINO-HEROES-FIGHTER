@@ -127,6 +127,7 @@ class Fighter {
   // ── R: Flicker — dash toward mouse cursor direction ─────
   useFlicker(mouseX) {
     if (this.state === 'dead' || this.stunTimer > 0) return false;
+    if (this._flickerCd > 0) return false;
 
     // Canvas position of fighter center in screen coords
     const canvas = document.getElementById('gameCanvas');
@@ -142,6 +143,7 @@ class Fighter {
     this.x = Math.max(0, Math.min(CANVAS_WIDTH - this.width, newX));
     this.facingRight = dir > 0;
 
+    this._flickerCd = 10; // 10 second cooldown
     FX.flickerEffect(this.x, this.y, this.width, this.height);
     return true;
   }
@@ -158,6 +160,9 @@ class Fighter {
         if (this.state === 'hurt') this.state = 'idle';
       }
     }
+
+    // flicker cooldown
+    if (this._flickerCd > 0) this._flickerCd = Math.max(0, this._flickerCd - dt);
 
     // attack frame timer
     if (this.attackFrameTimer > 0) {
