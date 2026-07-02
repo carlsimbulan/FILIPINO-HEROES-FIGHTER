@@ -10,20 +10,57 @@ const AVATARS = [
 ];
 
 const AVATAR_FRAMES = [
-  { id: 'none',     label: 'Default',        description: 'No frame',              cost: 0,     color: 'rgba(248,183,0,0.5)', effect: null       },
-  { id: 'gold',     label: 'Gold Frame',     description: 'Shining gold border',   cost: 1000,  color: '#F8B700',             effect: 'gold'     },
-  { id: 'fire',     label: 'Fire Frame',     description: 'Blazing fire effect',   cost: 10000, color: '#ff4400',             effect: 'fire'     },
-  { id: 'darkfire', label: 'Dark Fire Frame',description: 'Dark black fire effect',cost: 15000, color: '#660022',             effect: 'darkfire' },
+  { id: 'none',     label: 'Default',         description: 'No frame',                      cost: 0,     color: 'rgba(248,183,0,0.5)', effect: null,       unlockReq: null },
+  { id: 'green',    label: 'Green Border',     description: 'Claim with 20 Easy wins',       cost: 0,     color: '#27ae60',             effect: 'green',    unlockReq: { diff: 'easy',   wins: 20 } },
+  { id: 'blue',     label: 'Blue Border',      description: 'Claim with 20 Medium wins',     cost: 0,     color: '#1565c0',             effect: 'blue',     unlockReq: { diff: 'medium', wins: 20 } },
+  { id: 'black',    label: 'Black Border',     description: 'Claim with 20 Hard wins',       cost: 0,     color: '#222222',             effect: 'black',    unlockReq: { diff: 'hard',   wins: 20 } },
+  { id: 'gold',     label: 'Gold Frame',       description: 'Shining gold border',           cost: 1000,  color: '#F8B700',             effect: 'gold',     unlockReq: null },
+  { id: 'fire',     label: 'Fire Frame',       description: 'Blazing fire effect',           cost: 10000, color: '#ff4400',             effect: 'fire',     unlockReq: null },
+  { id: 'darkfire', label: 'Dark Fire Frame',  description: 'Dark black fire effect',        cost: 15000, color: '#660022',             effect: 'darkfire', unlockReq: null },
 ];
 
 const COINS_PER_WIN = { easy: 100, medium: 200, hard: 1000 };
 
 const PlayerStats = (() => {
-  const KEY = 'fhf_stats';
+  // ── Per-user key helpers ──────────────────────────────────
+  function _username() {
+    try {
+      return (sessionStorage.getItem('fhf_rawusername') || 'guest').toLowerCase().trim();
+    } catch(e) { return 'guest'; }
+  }
+
+  function _statsKey()  { return 'fhf_stats_'  + _username(); }
+  function _questsKey() { return 'fhf_quests_' + _username(); }
+
+  // Legacy migration: if the old key exists but the new per-user key doesn't,
+  // migrate the data so returning players don't lose their progress.
+  function _migrateIfNeeded() {
+    const user = _username();
+    if (user === 'guest') return;
+    const newKey = 'fhf_stats_' + user;
+    if (!localStorage.getItem(newKey) && localStorage.getItem('fhf_stats')) {
+      try {
+        localStorage.setItem(newKey, localStorage.getItem('fhf_stats'));
+      } catch(e) {}
+    }
+    const newQKey = 'fhf_quests_' + user;
+    if (!localStorage.getItem(newQKey) && localStorage.getItem('fhf_quests')) {
+      try {
+        localStorage.setItem(newQKey, localStorage.getItem('fhf_quests'));
+      } catch(e) {}
+    }
+  }
+
+  const KEY = 'fhf_stats'; // kept for legacy reference only
 
   function _load() {
+    _migrateIfNeeded();
     try {
-      return JSON.parse(localStorage.getItem(KEY)) || _default();
+      const d = JSON.parse(localStorage.getItem(_statsKey())) || _default();
+      // Ensure pvp fields exist on old saved data
+      if (d.pvpwins   === undefined) d.pvpwins   = 0;
+      if (d.pvplosses === undefined) d.pvplosses = 0;
+      return d;
     } catch(e) { return _default(); }
   }
 
@@ -35,13 +72,15 @@ const PlayerStats = (() => {
       framesOwned:  ['none'],
       wins:   { overall: 0, easy: 0, medium: 0, hard: 0 },
       losses: { overall: 0, easy: 0, medium: 0, hard: 0 },
+      pvpwins:   0,
+      pvplosses: 0,
       musicOn: true,
       sfxOn:   true,
     };
   }
 
   function _save(data) {
-    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e) {}
+    try { localStorage.setItem(_statsKey(), JSON.stringify(data)); } catch(e) {}
   }
 
   function get() { return _load(); }
@@ -118,7 +157,7 @@ const PlayerStats = (() => {
   }
 
   // ── Daily Quests ───────────────────────────────────────────
-  const QUEST_KEY = 'fhf_quests';
+  const QUEST_KEY = 'fhf_quests'; // kept for legacy reference only
 
   const QUEST_DEFS = [
     { id: 'easy3',   label: '3 Wins on Easy',         diff: 'easy',   target: 3, reward: 300  },
@@ -135,11 +174,12 @@ const PlayerStats = (() => {
   }
 
   function _loadQuests() {
-    try { return JSON.parse(localStorage.getItem(QUEST_KEY)) || null; } catch(e) { return null; }
+    _migrateIfNeeded();
+    try { return JSON.parse(localStorage.getItem(_questsKey())) || null; } catch(e) { return null; }
   }
 
   function _saveQuests(q) {
-    try { localStorage.setItem(QUEST_KEY, JSON.stringify(q)); } catch(e) {}
+    try { localStorage.setItem(_questsKey(), JSON.stringify(q)); } catch(e) {}
   }
 
   function _freshQuests() {
@@ -200,6 +240,25 @@ const PlayerStats = (() => {
     return { success: true, coinsEarned: def.reward };
   }
 
+  // Claim a free unlock frame (win-requirement based, cost 0)
+  function claimUnlockFrame(frameId) {
+    const frame = AVATAR_FRAMES.find(f => f.id === frameId);
+    if (!frame) return { success: false, error: 'Frame not found' };
+    if (!frame.unlockReq) return { success: false, error: 'This frame must be purchased' };
+    const d = _load();
+    if (!d.framesOwned) d.framesOwned = ['none'];
+    if (d.framesOwned.includes(frameId)) return { success: false, error: 'Already owned' };
+    // Check win requirement
+    const req = frame.unlockReq;
+    const wins = d.wins[req.diff] || 0;
+    if (wins < req.wins) {
+      return { success: false, error: 'Need ' + req.wins + ' ' + req.diff + ' wins (you have ' + wins + ')' };
+    }
+    d.framesOwned.push(frameId);
+    _save(d);
+    return { success: true };
+  }
+
   return {
     get, setAvatar, setFrame, buyFrame, getFrameById,
     recordWin, recordLoss, setMusic, setSfx,
@@ -207,6 +266,8 @@ const PlayerStats = (() => {
     AVATARS, AVATAR_FRAMES, COINS_PER_WIN,
     // Daily quests
     getQuests, checkQuestReset, recordWinForQuests, claimQuest,
-    QUEST_DEFS
+    QUEST_DEFS,
+    // Unlock frames
+    claimUnlockFrame
   };
 })();

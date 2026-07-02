@@ -11,13 +11,52 @@ const FrameRenderer = {
       ctx.strokeRect(x, y, size, size);
       return;
     }
-    if (frameId === 'gold') {
+    if (frameId === 'green') {
+      this._drawSolidColorFrame(ctx, x, y, size, t, '#27ae60', '#2ecc71', 'rgba(39,174,96,0.15)');
+    } else if (frameId === 'blue') {
+      this._drawSolidColorFrame(ctx, x, y, size, t, '#1565c0', '#1e88e5', 'rgba(21,101,192,0.15)');
+    } else if (frameId === 'black') {
+      this._drawSolidColorFrame(ctx, x, y, size, t, '#111111', '#333333', 'rgba(0,0,0,0.35)');
+    } else if (frameId === 'gold') {
       this._drawGoldFrame(ctx, x, y, size, t);
     } else if (frameId === 'fire') {
       this._drawFireFrame(ctx, x, y, size, t, false);
     } else if (frameId === 'darkfire') {
       this._drawFireFrame(ctx, x, y, size, t, true);
     }
+  },
+
+  // ── Solid color border (used for green, blue, black) ──────────────────────
+  _drawSolidColorFrame(ctx, x, y, size, t, baseColor, glowColor, innerTint) {
+    const pulse = 0.7 + 0.3 * Math.sin(t * 2.5);
+    ctx.save();
+    // Outer glow
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur  = 10 * pulse;
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth   = 3;
+    ctx.strokeRect(x - 2, y - 2, size + 4, size + 4);
+    // Corner squares
+    ctx.fillStyle = glowColor;
+    const corners = [[x-3,y-3],[x+size-1,y-3],[x-3,y+size-1],[x+size-1,y+size-1]];
+    corners.forEach(([cx,cy]) => {
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(Math.PI/4);
+      ctx.fillRect(-3,-3,6,6); ctx.restore();
+    });
+    ctx.restore();
+    // Inner border
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth   = 1;
+    ctx.strokeRect(x + 2, y + 2, size - 4, size - 4);
+    ctx.restore();
+    // Subtle inner tint
+    ctx.save();
+    ctx.globalAlpha = 0.12 + 0.06 * Math.sin(t * 2);
+    ctx.fillStyle   = baseColor;
+    ctx.fillRect(x, y, size, size);
+    ctx.restore();
   },
 
   _drawGoldFrame(ctx, x, y, size, t) {

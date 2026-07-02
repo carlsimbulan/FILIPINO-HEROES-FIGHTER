@@ -10,17 +10,30 @@ module.exports = async (req, res) => {
   try {
     const db = await connectDB();
     const { username, frameId } = req.body;
-    const frameCosts = { gold: 1000, fire: 10000, darkfire: 15000 };
+    const frameCosts = { green: 0, blue: 0, black: 0, gold: 1000, fire: 10000, darkfire: 15000 };
     const cost = frameCosts[frameId];
-    if (!cost && frameId !== 'none') return res.status(400).json({ error: 'Invalid frame' });
+    if (cost === undefined && frameId !== 'none') return res.status(400).json({ error: 'Invalid frame' });
 
     const user = await db.collection('users').findOne({ username });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const framesOwned = user.framesowned || [];
     if (framesOwned.includes(frameId)) return res.status(400).json({ error: 'Already owned' });
-    if ((user.coins || 0) < cost) return res.status(400).json({ error: 'Not enough coins' });
 
+    // Win-unlock frames (cost = 0) — verify win requirements server-side
+    const winReqs = { green: { diff: 'easywin', wins: 20 }, blue: { diff: 'mediumwin', wins: 20 }, black: { diff: 'hardwin', wins: 20 } };
+    if (winReqs[frameId]) {
+      const req = winReqs[frameId];
+      if ((user[req.diff] || 0) < req.wins) {
+        return res.status(400).json({ error: 'Win requirement not met' });
+      }
+      // Grant for free
+      await db.collection('users').updateOne({ username }, { $push: { framesowned: frameId } });
+      return res.json({ success: true, coinsLeft: user.coins || 0 });
+    }
+
+    // Paid frames
+    if ((user.coins || 0) < cost) return res.status(400).json({ error: 'Not enough coins' });
     await db.collection('users').updateOne({ username }, {
       $inc: { coins: -cost }, $push: { framesowned: frameId }
     });

@@ -42,7 +42,18 @@ MongoClient.connect(MONGO_URI)
       { pvplosses: { $exists: false } },
       { $set: { pvplosses: 0 } }
     );
-    console.log('Migration complete: pvpwins/pvplosses fields ensured on all users');
+    // Migration: add easyloss/mediumloss/hardloss/overalllosses to existing users
+    await db.collection('users').updateMany(
+      { easyloss: { $exists: false } },
+      { $set: { easyloss: 0, mediumloss: 0, hardloss: 0, overalllosses: 0 } }
+    );
+    // Migration: add loss fields to leaderboards collection too
+    await db.collection('leaderboards').updateMany(
+      { easyloss: { $exists: false } },
+      { $set: { easyloss: 0, mediumloss: 0, hardloss: 0, overalllosses: 0 } }
+    );
+    // Migration: add green/blue/black frame support to existing buyframe cost map (server.js handles this via frameCosts map)
+    console.log('Migration complete: pvpwins/pvplosses/loss fields ensured on all users');
   })
   .catch(err => {
     console.error('MongoDB connection failed:', err.message);
@@ -77,6 +88,10 @@ app.post('/api/register', async (req, res) => {
       easywin:      0,
       mediumwin:    0,
       hardwin:      0,
+      easyloss:     0,
+      mediumloss:   0,
+      hardloss:     0,
+      overalllosses:0,
       coins:        0,
       activeframe:  'none',
       framesowned:  ['none'],
@@ -124,6 +139,12 @@ app.post('/api/login', async (req, res) => {
       easywin:      user.easywin      || 0,
       mediumwin:    user.mediumwin    || 0,
       hardwin:      user.hardwin      || 0,
+      easyloss:     user.easyloss     || 0,
+      mediumloss:   user.mediumloss   || 0,
+      hardloss:     user.hardloss     || 0,
+      overalllosses:user.overalllosses|| 0,
+      pvpwins:      user.pvpwins      || 0,
+      pvplosses:    user.pvplosses    || 0,
       coins:        user.coins        || 0,
       activeframe:  user.activeframe  || 'none',
       framesowned:  user.framesowned  || ['none'],
@@ -135,22 +156,42 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ── POST /api/stats/win ────────────────────────────────────
-// Called after each fight to record a win
+// Called after each fight to record a win (for winner) or loss (for loser)
 app.post('/api/stats/win', async (req, res) => {
   try {
     const { username, difficulty } = req.body;
     if (!username) return res.status(400).json({ error: 'username required' });
 
-    const field = difficulty + 'win';
+    const winField = difficulty + 'win';
     const coinsMap = { easy: 100, medium: 200, hard: 1000 };
     const coins = coinsMap[difficulty] || 100;
     const inc = { overallwins: 1, coins };
-    if (['easywin','mediumwin','hardwin'].includes(field)) inc[field] = 1;
+    if (['easywin','mediumwin','hardwin'].includes(winField)) inc[winField] = 1;
 
     await users().updateOne({ username }, { $inc: inc });
-    await leaderboards().updateOne({ username }, { $inc: { overallwins: 1, [field]: 1 } }, { upsert: true });
+    await leaderboards().updateOne({ username }, { $inc: { overallwins: 1, [winField]: 1 } }, { upsert: true });
 
     res.json({ success: true, coinsEarned: coins });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── POST /api/stats/loss ───────────────────────────────────
+// Called after each fight to record a loss for the loser
+app.post('/api/stats/loss', async (req, res) => {
+  try {
+    const { username, difficulty } = req.body;
+    if (!username) return res.status(400).json({ error: 'username required' });
+
+    const lossField = difficulty + 'loss';
+    const inc = { overalllosses: 1 };
+    if (['easyloss','mediumloss','hardloss'].includes(lossField)) inc[lossField] = 1;
+
+    await users().updateOne({ username }, { $inc: inc });
+    await leaderboards().updateOne({ username }, { $inc: inc }, { upsert: true });
+
+    res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -289,13 +330,19 @@ app.get('/api/leaderboard', async (req, res) => {
             as: 'userdata'
         }},
         { $addFields: {
-            avatar:      { $ifNull: [{ $arrayElemAt: ['$userdata.avatar', 0] }, 'lapu'] },
-            activeframe: { $ifNull: [{ $arrayElemAt: ['$userdata.activeframe', 0] }, 'none'] },
-            ingamename:  { $ifNull: [{ $arrayElemAt: ['$userdata.ingamename', 0] }, '$username'] },
-            overallwins: { $ifNull: [{ $arrayElemAt: ['$userdata.overallwins', 0] }, '$overallwins'] },
-            easywin:     { $ifNull: [{ $arrayElemAt: ['$userdata.easywin', 0] }, '$easywin'] },
-            mediumwin:   { $ifNull: [{ $arrayElemAt: ['$userdata.mediumwin', 0] }, '$mediumwin'] },
-            hardwin:     { $ifNull: [{ $arrayElemAt: ['$userdata.hardwin', 0] }, '$hardwin'] },
+            avatar:        { $ifNull: [{ $arrayElemAt: ['$userdata.avatar', 0] }, 'lapu'] },
+            activeframe:   { $ifNull: [{ $arrayElemAt: ['$userdata.activeframe', 0] }, 'none'] },
+            ingamename:    { $ifNull: [{ $arrayElemAt: ['$userdata.ingamename', 0] }, '$username'] },
+            overallwins:   { $ifNull: [{ $arrayElemAt: ['$userdata.overallwins', 0] }, '$overallwins'] },
+            easywin:       { $ifNull: [{ $arrayElemAt: ['$userdata.easywin', 0] }, '$easywin'] },
+            mediumwin:     { $ifNull: [{ $arrayElemAt: ['$userdata.mediumwin', 0] }, '$mediumwin'] },
+            hardwin:       { $ifNull: [{ $arrayElemAt: ['$userdata.hardwin', 0] }, '$hardwin'] },
+            easyloss:      { $ifNull: [{ $arrayElemAt: ['$userdata.easyloss', 0] }, 0] },
+            mediumloss:    { $ifNull: [{ $arrayElemAt: ['$userdata.mediumloss', 0] }, 0] },
+            hardloss:      { $ifNull: [{ $arrayElemAt: ['$userdata.hardloss', 0] }, 0] },
+            overalllosses: { $ifNull: [{ $arrayElemAt: ['$userdata.overalllosses', 0] }, 0] },
+            pvpwins:       { $ifNull: [{ $arrayElemAt: ['$userdata.pvpwins', 0] }, 0] },
+            pvplosses:     { $ifNull: [{ $arrayElemAt: ['$userdata.pvplosses', 0] }, 0] },
         }},
         { $project: { userdata: 0 } }
       ]).toArray();
@@ -314,7 +361,25 @@ app.get('/api/user/:username', async (req, res) => {
       { projection: { password: 0 } } // exclude password
     );
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
+    // Ensure loss fields are present even on old accounts
+    res.json({
+      username:      user.username,
+      ingamename:    user.ingamename,
+      overallwins:   user.overallwins   || 0,
+      easywin:       user.easywin       || 0,
+      mediumwin:     user.mediumwin     || 0,
+      hardwin:       user.hardwin       || 0,
+      easyloss:      user.easyloss      || 0,
+      mediumloss:    user.mediumloss    || 0,
+      hardloss:      user.hardloss      || 0,
+      overalllosses: user.overalllosses || 0,
+      pvpwins:       user.pvpwins       || 0,
+      pvplosses:     user.pvplosses     || 0,
+      coins:         user.coins         || 0,
+      activeframe:   user.activeframe   || 'none',
+      framesowned:   user.framesowned   || ['none'],
+      avatar:        user.avatar        || 'lapu',
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -490,6 +555,38 @@ app.post('/api/quests/claim', async (req, res) => {
     await users().updateOne({ username }, { $inc: { coins: parseInt(coins) } });
     res.json({ success: true });
   } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── GET /api/admin/migrate ─────────────────────────────────
+// Run database migrations manually without restarting the server.
+// Visit http://localhost:3000/api/admin/migrate in your browser to trigger.
+app.get('/api/admin/migrate', async (req, res) => {
+  try {
+    // Add loss fields to all users missing them
+    const usersResult = await users().updateMany(
+      { easyloss: { $exists: false } },
+      { $set: { easyloss: 0, mediumloss: 0, hardloss: 0, overalllosses: 0 } }
+    );
+    // Add loss fields to leaderboards collection
+    const lbResult = await leaderboards().updateMany(
+      { easyloss: { $exists: false } },
+      { $set: { easyloss: 0, mediumloss: 0, hardloss: 0, overalllosses: 0 } }
+    );
+    // Add pvplosses to users missing it
+    const pvpResult = await users().updateMany(
+      { pvplosses: { $exists: false } },
+      { $set: { pvplosses: 0, pvpwins: 0 } }
+    );
+    res.json({
+      success: true,
+      usersUpdated:  usersResult.modifiedCount,
+      lbUpdated:     lbResult.modifiedCount,
+      pvpUpdated:    pvpResult.modifiedCount,
+      message: 'Migration complete. Loss fields added to all existing documents.'
+    });
+  } catch(e) {
     res.status(500).json({ error: e.message });
   }
 });

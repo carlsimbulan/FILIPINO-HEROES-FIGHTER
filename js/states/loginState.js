@@ -199,17 +199,25 @@ class LoginState {
           sessionStorage.setItem('fhf_userdata',   JSON.stringify(data));
         } catch(e) { window._fhf_userdata = data; }
 
-        // Sync local stats with server data
+        // Sync local stats with server data (write to per-user key)
         const stats = PlayerStats.get();
-        stats.wins.overall = data.overallwins || 0;
-        stats.wins.easy    = data.easywin    || 0;
-        stats.wins.medium  = data.mediumwin  || 0;
-        stats.wins.hard    = data.hardwin    || 0;
-        stats.avatar       = data.avatar     || 'lapu';
-        stats.coins        = data.coins      || 0;
-        stats.frame        = data.activeframe || 'none';
-        stats.framesOwned  = data.framesowned || ['none'];
-        localStorage.setItem('fhf_stats', JSON.stringify(stats));
+        stats.wins.overall  = data.overallwins  || 0;
+        stats.wins.easy     = data.easywin      || 0;
+        stats.wins.medium   = data.mediumwin    || 0;
+        stats.wins.hard     = data.hardwin      || 0;
+        stats.losses.overall= data.overalllosses|| 0;
+        stats.losses.easy   = data.easyloss     || 0;
+        stats.losses.medium = data.mediumloss   || 0;
+        stats.losses.hard   = data.hardloss     || 0;
+        stats.pvpwins       = data.pvpwins      || 0;
+        stats.pvplosses     = data.pvplosses    || 0;
+        stats.avatar        = data.avatar       || 'lapu';
+        stats.coins         = data.coins        || 0;
+        stats.frame         = data.activeframe  || 'none';
+        stats.framesOwned   = data.framesowned  || ['none'];
+        // Use the per-user key so accounts don't overwrite each other
+        const perUserKey = 'fhf_stats_' + data.username.toLowerCase().trim();
+        localStorage.setItem(perUserKey, JSON.stringify(stats));
 
         err.textContent = '';
         this.game.transition(States.HOME);

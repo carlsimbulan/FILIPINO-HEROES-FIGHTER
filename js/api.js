@@ -38,6 +38,15 @@ const GameAPI = {
     return res.json();
   },
 
+  async recordLoss(username, difficulty) {
+    const res = await fetch(API_BASE + '/stats/loss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, difficulty })
+    });
+    return res.json();
+  },
+
   async setAvatar(username, avatar) {
     const res = await fetch(API_BASE + '/stats/avatar', {
       method: 'POST',

@@ -211,6 +211,10 @@ class FightState {
         Audio.playVictory();
       } else {
         PlayerStats.recordLoss(diff);
+        try {
+          const username = sessionStorage.getItem('fhf_rawusername');
+          if (username) GameAPI.recordLoss(username, diff).catch(() => {});
+        } catch(e) {}
         Audio.playDefeat();
       }
       setTimeout(() => {

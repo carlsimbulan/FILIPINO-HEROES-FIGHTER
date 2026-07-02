@@ -18,6 +18,12 @@ class FriendDrawer {
   open() {
     if (this._isOpen) return;
     this._isOpen = true;
+    // Position drawer below the header bar
+    const header = document.querySelector('.ui-panel > div:first-child');
+    const headerH = header ? header.getBoundingClientRect().bottom : 62;
+    this._drawer.style.top    = headerH + 'px';
+    this._drawer.style.height = (window.innerHeight - headerH) + 'px';
+    this._overlay.style.top   = headerH + 'px';
     this._drawer.style.transform = 'translateX(0)';
     this._overlay.style.display = 'block';
     this._loadAndRender();
@@ -49,11 +55,12 @@ class FriendDrawer {
     this._overlay.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1099;';
     this._overlay.addEventListener('click', () => this.close());
 
-    // Drawer panel
+    // Drawer panel — starts below the header (top is set dynamically on open)
     this._drawer = document.createElement('div');
     this._drawer.style.cssText = [
-      'position:fixed;top:0;right:0;width:300px;height:100%;z-index:1100;',
+      'position:fixed;top:0;right:0;width:300px;z-index:1100;',
       'background:rgba(8,14,28,0.97);border-left:1px solid rgba(248,183,0,0.25);',
+      'border-top:1px solid rgba(248,183,0,0.15);',
       'box-shadow:-6px 0 32px rgba(2,79,203,0.25);',
       'display:flex;flex-direction:column;font-family:\'Georgia\',serif;',
       'transform:translateX(100%);transition:transform 0.28s cubic-bezier(.4,0,.2,1);',
@@ -194,7 +201,9 @@ class FriendDrawer {
   _renderFriendEntry(friend) {
     const av = (typeof PlayerStats !== 'undefined') ? PlayerStats.getAvatarById(friend.avatar || 'lapu') : { src: 'hereoes images/lapu-lapu.png' };
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(184,216,248,0.07);';
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(184,216,248,0.07);cursor:pointer;transition:background 0.15s;';
+    row.onmouseover = () => { row.style.background = 'rgba(58,136,232,0.06)'; };
+    row.onmouseout  = () => { row.style.background = 'transparent'; };
 
     // Avatar with frame canvas overlay — matches shop/profile style
     const avatarWrap = document.createElement('div');
@@ -208,7 +217,7 @@ class FriendDrawer {
     const fc = avatarWrap.querySelector('canvas');
     const frameId = friend.frame || 'none';
     const animFrame = () => {
-      if (!fc.parentNode) return; // cleaned up
+      if (!fc.parentNode) return;
       const fCtx = fc.getContext('2d');
       fCtx.clearRect(0, 0, 42, 42);
       if (typeof FrameRenderer !== 'undefined') FrameRenderer.drawFrame(fCtx, frameId, 0, 0, 42);
@@ -223,6 +232,10 @@ class FriendDrawer {
       '<div style="color:#64748B;font-size:10px;">🏆 ' + (friend.overallwins || 0) + ' wins</div>';
     row.appendChild(info);
 
+    // Action buttons area
+    const actions = document.createElement('div');
+    actions.style.cssText = 'display:flex;gap:4px;align-items:center;flex-shrink:0;';
+
     // Challenge button — only shown when PVPClient is connected
     if (typeof PVPClient !== 'undefined' && PVPClient.socket && PVPClient.socket.connected) {
       const challengeBtn = document.createElement('button');
@@ -232,19 +245,95 @@ class FriendDrawer {
       challengeBtn.style.cssText = 'background:rgba(248,183,0,0.08);border:1px solid rgba(248,183,0,0.4);color:#F8B700;font-size:12px;padding:3px 7px;cursor:pointer;flex-shrink:0;transition:all 0.15s;';
       challengeBtn.onmouseover = () => { challengeBtn.style.background = 'rgba(248,183,0,0.2)'; };
       challengeBtn.onmouseout  = () => { challengeBtn.style.background = 'rgba(248,183,0,0.08)'; };
-      challengeBtn.addEventListener('click', () => this._onChallenge(friend));
-      row.appendChild(challengeBtn);
+      challengeBtn.addEventListener('click', (e) => { e.stopPropagation(); this._onChallenge(friend); });
+      actions.appendChild(challengeBtn);
     }
 
-    const rmBtn = document.createElement('button');
-    rmBtn.textContent = '✕';
-    rmBtn.title = 'Remove friend';
-    rmBtn.style.cssText = 'background:none;border:1px solid rgba(231,76,60,0.35);color:#e74c3c;font-size:11px;padding:3px 7px;cursor:pointer;flex-shrink:0;transition:all 0.15s;';
-    rmBtn.onmouseover = () => { rmBtn.style.background = 'rgba(231,76,60,0.15)'; };
-    rmBtn.onmouseout  = () => { rmBtn.style.background = 'none'; };
-    rmBtn.addEventListener('click', () => this._onRemove(friend.username));
-    row.appendChild(rmBtn);
+    // More options button (⋯) — opens View Profile / Remove
+    const moreBtn = document.createElement('button');
+    moreBtn.textContent = '⋯';
+    moreBtn.title = 'More options';
+    moreBtn.style.cssText = 'background:none;border:1px solid rgba(184,216,248,0.2);color:#94A3B8;font-size:14px;padding:2px 7px;cursor:pointer;flex-shrink:0;transition:all 0.15s;';
+    moreBtn.onmouseover = () => { moreBtn.style.color = '#fff'; moreBtn.style.borderColor = '#94A3B8'; };
+    moreBtn.onmouseout  = () => { moreBtn.style.color = '#94A3B8'; moreBtn.style.borderColor = 'rgba(184,216,248,0.2)'; };
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._showFriendOptions(moreBtn, friend);
+    });
+    actions.appendChild(moreBtn);
+
+    row.appendChild(actions);
     return row;
+  }
+
+  _showFriendOptions(anchor, friend) {
+    // Remove any existing options popup
+    const existing = document.getElementById('friend-options-popup');
+    if (existing) { existing.remove(); return; }
+
+    const popup = document.createElement('div');
+    popup.id = 'friend-options-popup';
+    const rect = anchor.getBoundingClientRect();
+    popup.style.cssText = 'position:fixed;z-index:2000;background:rgba(10,14,24,0.98);border:1px solid rgba(58,136,232,0.4);box-shadow:0 4px 20px rgba(0,0,0,0.6);font-family:Georgia,serif;min-width:160px;';
+    popup.style.top  = (rect.bottom + 4) + 'px';
+    popup.style.right = (window.innerWidth - rect.right) + 'px';
+
+    const viewBtn = document.createElement('button');
+    viewBtn.textContent = '👤 View Profile';
+    viewBtn.style.cssText = 'display:block;width:100%;padding:10px 14px;background:none;border:none;border-bottom:1px solid rgba(58,136,232,0.15);color:#B8D8F8;font-family:Georgia,serif;font-size:12px;text-align:left;cursor:pointer;transition:background 0.15s;';
+    viewBtn.onmouseover = () => { viewBtn.style.background = 'rgba(58,136,232,0.12)'; };
+    viewBtn.onmouseout  = () => { viewBtn.style.background = 'none'; };
+    viewBtn.addEventListener('click', () => {
+      popup.remove();
+      this._viewFriendProfile(friend);
+    });
+
+    const rmBtn = document.createElement('button');
+    rmBtn.textContent = '✕ Remove Friend';
+    rmBtn.style.cssText = 'display:block;width:100%;padding:10px 14px;background:none;border:none;color:#e74c3c;font-family:Georgia,serif;font-size:12px;text-align:left;cursor:pointer;transition:background 0.15s;';
+    rmBtn.onmouseover = () => { rmBtn.style.background = 'rgba(231,76,60,0.12)'; };
+    rmBtn.onmouseout  = () => { rmBtn.style.background = 'none'; };
+    rmBtn.addEventListener('click', () => {
+      popup.remove();
+      this._confirmRemoveFriend(friend.username, friend.ingamename || friend.username);
+    });
+
+    popup.appendChild(viewBtn);
+    popup.appendChild(rmBtn);
+    document.body.appendChild(popup);
+
+    // Close on outside click
+    const close = (e) => { if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', close); } };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  }
+
+  async _viewFriendProfile(friend) {
+    try {
+      const data = await GameAPI.getUser(friend.username);
+      if (data.error) { this._showMsg('Could not load profile.', '#e74c3c'); return; }
+      // Delegate to HomeState's player profile modal if available
+      const homeState = window._currentHomeState;
+      if (homeState && typeof homeState._openPlayerProfileModal === 'function') {
+        homeState._openPlayerProfileModal({
+          username:      data.username,
+          ingamename:    data.ingamename || data.username,
+          avatar:        data.avatar     || 'lapu',
+          frame:         data.activeframe|| 'none',
+          overallwins:   data.overallwins   || 0,
+          easywin:       data.easywin       || 0,
+          mediumwin:     data.mediumwin     || 0,
+          hardwin:       data.hardwin       || 0,
+          easyloss:      data.easyloss      || 0,
+          mediumloss:    data.mediumloss    || 0,
+          hardloss:      data.hardloss      || 0,
+          overalllosses: data.overalllosses || 0,
+          pvpwins:       data.pvpwins       || 0,
+          pvplosses:     data.pvplosses     || 0,
+        });
+      }
+    } catch(e) {
+      this._showMsg('Server error.', '#e74c3c');
+    }
   }
 
   _renderRequestEntry(requester) {
@@ -312,6 +401,40 @@ class FriendDrawer {
       if (res.success) await this._loadAndRender();
       else this._showMsg(res.error || 'Failed.', '#e74c3c');
     } catch (e) { this._showMsg('Server error.', '#e74c3c'); }
+  }
+
+  _confirmRemoveFriend(friendUsername, displayName) {
+    // Remove any existing confirm modal
+    const existing = document.getElementById('remove-friend-confirm');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'remove-friend-confirm';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);display:flex;justify-content:center;align-items:center;z-index:2100;pointer-events:all;';
+
+    modal.innerHTML =
+      '<div style="background:linear-gradient(180deg,#141e30,#0a0e18);border:2px solid rgba(231,76,60,0.5);box-shadow:0 0 40px rgba(231,76,60,0.2);padding:28px 32px;font-family:Georgia,serif;text-align:center;min-width:300px;max-width:380px;">' +
+        '<div style="color:#e74c3c;font-size:22px;margin-bottom:12px;">⚠</div>' +
+        '<div style="color:#fff;font-size:14px;font-weight:bold;margin-bottom:8px;">Remove Friend?</div>' +
+        '<div style="color:#94A3B8;font-size:12px;margin-bottom:24px;">Are you sure you want to remove <span style="color:#F8B700;font-weight:bold;">' + this._esc(displayName) + '</span> from your friends list?</div>' +
+        '<div style="display:flex;gap:12px;justify-content:center;">' +
+          '<button id="rm-confirm-yes" style="padding:10px 24px;font-family:Georgia,serif;font-size:12px;font-weight:bold;background:linear-gradient(180deg,#c0392b,#922b21);color:#fff;border:1px solid #e74c3c;cursor:pointer;letter-spacing:2px;transition:filter 0.15s;" onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'brightness(1)\'">REMOVE</button>' +
+          '<button id="rm-confirm-no"  style="padding:10px 24px;font-family:Georgia,serif;font-size:12px;font-weight:bold;background:rgba(14,21,32,0.8);color:#94A3B8;border:1px solid rgba(184,216,248,0.25);cursor:pointer;letter-spacing:2px;transition:all 0.15s;" onmouseover="this.style.color=\'#fff\'" onmouseout="this.style.color=\'#94A3B8\'">CANCEL</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#rm-confirm-yes').addEventListener('click', () => {
+      modal.remove();
+      this._onRemove(friendUsername);
+    });
+    modal.querySelector('#rm-confirm-no').addEventListener('click', () => {
+      modal.remove();
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
   }
 
   async _onRemove(friendUsername) {
