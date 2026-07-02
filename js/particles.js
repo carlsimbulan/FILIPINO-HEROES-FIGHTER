@@ -68,13 +68,18 @@ class Particle {
 class ParticleSystem {
   constructor() { this._particles = []; }
 
-  add(p) { this._particles.push(p); }
+  add(p) {
+    if (this._particles.length >= 400) {
+      this._particles.shift(); // evict oldest to stay under 400-particle cap
+    }
+    this._particles.push(p);
+  }
   update(dt) { this._particles = this._particles.filter(p => p.update(dt)); }
   render(ctx) { for (const p of this._particles) p.render(ctx); }
   clear() { this._particles = []; }
 
   // ── Hit Impact — big burst ────────────────────────────────
-  hitImpact(x, y, color = '#ffe066') {
+  hitImpact(x, y, color = '#ffe066', attackType = 'light') {
     // Large sparks
     for (let i = 0; i < 20; i++) {
       const angle = (Math.PI * 2 * i) / 20 + (Math.random() - 0.5) * 0.4;
@@ -110,6 +115,27 @@ class ParticleSystem {
         c.restore();
       }
     });
+
+    // ── Extra debris for heavy / ult hits ─────────────────
+    if (attackType === 'heavy' || attackType === 'ult') {
+      const count = 8 + Math.floor(Math.random() * 5); // 8–12
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 80 + Math.random() * 160;
+        this.add(new Particle(x, y, {
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 60,
+          life: 0.5 + Math.random() * 0.3,
+          size: 12 + Math.random() * 8,
+          endSize: 0,
+          type: 'square',
+          color,
+          gravity: 480,
+          rotation: Math.random() * Math.PI,
+          rotSpeed: (Math.random() - 0.5) * 12
+        }));
+      }
+    }
   }
 
   // ── Stun Effect — electric stars ─────────────────────────

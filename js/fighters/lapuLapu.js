@@ -23,6 +23,7 @@ class LapuLapu extends Fighter {
     this._spinAngle = 0;
     this._animFrame = 0;
     this._animTimer = 0;
+    this.themeColor = '#c0391b'; // deep red — war and fire
   }
 
   useSkillQ() {

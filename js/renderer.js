@@ -1,10 +1,18 @@
 // renderer.js — canvas draw helpers (brown tropical arena + enhanced effects)
 
 const Renderer = {
-  drawBackground(ctx) {
+  drawBackground(ctx, focusX) {
     const W = CANVAS_WIDTH, H = CANVAS_HEIGHT;
     const groundY = GROUND_Y - GROUND_HEIGHT;
     const t = Date.now() / 1000;
+
+    // ── Parallax offsets (subtle depth effect) ────────────
+    if (focusX === undefined) focusX = W / 2;
+    const parallaxOffset = focusX - W / 2;
+    const castleOffset = Math.max(-8,  Math.min(8,  parallaxOffset * 0.04));
+    const fogOffset    = Math.max(-12, Math.min(12, parallaxOffset * 0.08));
+    // Invalidate torch cache on every frame so positions track canvas resize
+    this._torchPositionsCache = null;
 
     // ── Night sky gradient ────────────────────────────────
     const sky = ctx.createLinearGradient(0, 0, 0, groundY);
@@ -59,6 +67,8 @@ const Renderer = {
     ctx.fillRect(0, 0, W, H);
 
     // ── Distant dark castle silhouette ────────────────────
+    ctx.save();
+    ctx.translate(castleOffset, 0);
     ctx.fillStyle = '#050510';
     // Main tower left
     ctx.fillRect(W*0.06, groundY-120, 24, 120);
@@ -113,6 +123,7 @@ const Renderer = {
     this._drawDarkTorch(ctx, W - 65,     groundY - 55, t);
     this._drawDarkTorch(ctx, W * 0.28,   groundY - 42, t);
     this._drawDarkTorch(ctx, W * 0.72,   groundY - 42, t);
+    ctx.restore(); // end castleOffset
 
     // ── Animated floating magic particles ────────────────
     const numPart = 18;
@@ -136,6 +147,8 @@ const Renderer = {
     }
 
     // ── Animated fog wisps at ground level ───────────────
+    ctx.save();
+    ctx.translate(fogOffset, 0);
     for (let i = 0; i < 6; i++) {
       const fx     = (i / 6) * W + Math.sin(t * 0.3 + i * 1.4) * 40;
       const fw     = 120 + i * 30;
@@ -149,6 +162,7 @@ const Renderer = {
       ctx.fillRect(fx - fw * 0.5, groundY - 18, fw, 24);
       ctx.restore();
     }
+    ctx.restore(); // end fogOffset
 
     // ── Dark stone ground ─────────────────────────────────
     const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
@@ -234,6 +248,137 @@ const Renderer = {
     }
   },
 
+  _applySpriteShader(ctx, fighter) {
+    const { x, y, width, height, state, skills, health, maxHealth } = fighter;
+    const t = Date.now() / 1000;
+    ctx.save();
+
+    // 1) Rim light — idle/walk: white strip on the facing side
+    if (state === 'idle' || state === 'walk') {
+      const rimW = 3;
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = '#ffffff';
+      if (fighter.facingRight)
+        ctx.fillRect(x + width - rimW, y, rimW, height);
+      else
+        ctx.fillRect(x, y, rimW, height);
+    }
+
+    // 2) Attack flash — white full-box overlay
+    if (state === 'attack_light' || state === 'attack_heavy') {
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x, y, width, height);
+    }
+
+    // 3) Skill Q pulse — orange oscillating overlay
+    if (skills.q.active) {
+      ctx.globalAlpha = 0.10 + 0.08 * Math.abs(Math.sin(Math.PI * 2 * 2 * t));
+      ctx.fillStyle = '#e67e22';
+      ctx.fillRect(x, y, width, height);
+    }
+
+    // 4) Ultimate gold ramp — alpha increases from 0 to 0.30 over first 0.3s
+    if (state === 'ultimate') {
+      const ultMaxDuration = 1.2; // matching the ult timer set in fighter subclasses
+      const elapsed = skills.ult.timer !== undefined
+        ? Math.max(0, ultMaxDuration - (skills.ult.timer || 0))
+        : ultMaxDuration;
+      ctx.globalAlpha = Math.min(0.30, (elapsed / 0.3) * 0.30);
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(x, y, width, height);
+    }
+
+    // 5) Low HP red pulse — only when alive
+    if (health <= maxHealth * 0.25 && state !== 'dead') {
+      ctx.globalAlpha = 0.10 + 0.08 * Math.abs(Math.sin(Math.PI * 2 * 4 * t));
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(x, y, width, height);
+    }
+
+    // 6) Dead desaturation — near-black overlay at 0.70 alpha
+    if (state === 'dead') {
+      ctx.globalAlpha = 0.70;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(x, y, width, height);
+    }
+
+    ctx.restore();
+  },
+
+  _renderDropShadow(ctx, fighter) {
+    const floorY   = GROUND_Y - GROUND_HEIGHT;
+    const shadowCX = fighter.x + fighter.width / 2;
+    const maxHalfW = 19.5;
+    const minHalfW = 5;
+    const maxAlpha = 0.31;
+    const minAlpha = 0.12;
+
+    let halfW = maxHalfW;
+    let alpha = maxAlpha;
+
+    if (!fighter.onGround) {
+      // Apex height: |jumpVelocity|^2 / (2 * gravity) — gravity ~900 px/s²
+      const jv    = Math.abs(fighter.jumpVelocity || 600);
+      const maxH  = (jv * jv) / (2 * 900);
+      const heightAbove = Math.max(0, floorY - (fighter.y + fighter.height));
+      const ratio = Math.min(1, heightAbove / maxH);
+      halfW = maxHalfW - (maxHalfW - minHalfW) * ratio;
+      alpha = maxAlpha - (maxAlpha - minAlpha) * ratio;
+    }
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle   = 'rgba(0,0,0,1)';
+    ctx.beginPath();
+    ctx.ellipse(shadowCX, floorY, halfW, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  },
+
+  _getTorchPositions() {
+    if (!this._torchPositionsCache) {
+      const groundY = GROUND_Y - GROUND_HEIGHT;
+      const W       = CANVAS_WIDTH;
+      this._torchPositionsCache = [
+        { x: 55,          y: groundY - 55 },
+        { x: W - 65,      y: groundY - 55 },
+        { x: W * 0.28,    y: groundY - 42 },
+        { x: W * 0.72,    y: groundY - 42 },
+      ];
+    }
+    return this._torchPositionsCache;
+  },
+
+  _renderTorchLighting(ctx, fighter) {
+    const t       = Date.now() / 1000;
+    const cx      = fighter.x + fighter.width  / 2;
+    const cy      = fighter.y + fighter.height / 2;
+    const torches = this._getTorchPositions();
+
+    for (const torch of torches) {
+      const dx   = cx - torch.x;
+      const dy   = cy - torch.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist >= 180 || Math.abs(cy - torch.y) >= 120) continue;
+
+      const baseAlpha = Math.max(0, (1 - dist / 180) * 0.18);
+      const flicker   = 0.8 + 0.2 * Math.sin(t * 7 + torch.x);
+      const alpha     = baseAlpha * flicker;
+      if (alpha < 0.005) continue;
+
+      const r = fighter.width * 1.5;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      grad.addColorStop(0, 'rgba(180,220,255,1)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+      ctx.restore();
+    }
+  },
+
   drawHealthBars(ctx, p1, p2) {
     const barMaxW = Math.round(CANVAS_WIDTH * 0.32);
     const barH = 24;
@@ -272,6 +417,47 @@ const Renderer = {
         ctx.restore();
       }
 
+      // ── Ghost bar — pre-damage health shrinking slowly ──────────────────
+      if (fighter.ghostBarHealth !== undefined &&
+          fighter.ghostBarHealth > fighter.health &&
+          fighter._ghostBarDecayTimer > 0) {
+
+        const ghostRatio    = fighter.ghostBarHealth / fighter.maxHealth;
+        const currentRatio  = fighter.health / fighter.maxHealth;
+        const ghostFilled   = Math.round(ghostRatio   * bw);
+        const currentFilled = Math.round(currentRatio * bw);
+        const decayFraction = 1 - (fighter._ghostBarDecayTimer / 0.8);
+        const shrunkFilled  = Math.round(
+          ghostFilled - (ghostFilled - currentFilled) * decayFraction
+        );
+
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle   = '#c8a800';
+        if (!reversed) {
+          ctx.fillRect(bx + currentFilled, barY,
+            Math.max(0, shrunkFilled - currentFilled), barH);
+        } else {
+          const ghostStart = bx + bw - shrunkFilled;
+          ctx.fillRect(ghostStart, barY,
+            Math.max(0, shrunkFilled - currentFilled), barH);
+        }
+        ctx.restore();
+      }
+
+      // ── Damage flash — white overlay fading out over 0.25s ──────────────
+      if (fighter.damageFlashTimer > 0) {
+        ctx.save();
+        ctx.globalAlpha = fighter.damageFlashTimer / 0.25;
+        ctx.fillStyle   = '#ffffff';
+        if (!reversed) {
+          ctx.fillRect(bx, barY, filled, barH);
+        } else {
+          ctx.fillRect(bx + bw - filled, barY, filled, barH);
+        }
+        ctx.restore();
+      }
+
       ctx.strokeStyle = 'rgba(255,180,60,0.6)';
       ctx.lineWidth = 2;
       ctx.strokeRect(bx, barY, bw, barH);
@@ -306,7 +492,10 @@ const Renderer = {
     ctx.translate(cx, cy);
     ctx.scale(scale, scale);
     ctx.translate(-cx, -cy);
-    fighter.renderSprite(ctx);
+    this._renderDropShadow(ctx, fighter);      // shadow appears beneath sprite
+    fighter.renderSprite(ctx);                 // existing pixel art
+    this._applySpriteShader(ctx, fighter);     // state-reactive color overlays
+    this._renderTorchLighting(ctx, fighter);   // proximity torch glow
     ctx.restore();
     this.drawStunIndicator(ctx, fighter);
   },

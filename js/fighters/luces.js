@@ -28,6 +28,7 @@ class Luces extends Fighter {
     this._rollTimer = 0;
     this._invincible = false;
     this._ultHitCount = 0;
+    this.themeColor = '#2e7d32'; // forest green — mercenary camouflage
     this._ultHitTick = 0;
     this._ultTarget = null;
     this._animFrame = 0;

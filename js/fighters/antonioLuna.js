@@ -26,6 +26,7 @@ class AntonioLuna extends Fighter {
     this._revolverTarget = null;
     this._animFrame = 0;
     this._animTimer = 0;
+    this.themeColor = '#b71c1c'; // blood red — rage and valor
   }
 
   get lightDamageFinal()  { return this._rageActive ? Math.round(this.lightDamage * 1.5)  : this.lightDamage; }

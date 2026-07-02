@@ -28,6 +28,7 @@ class Urduja extends Fighter {
     this._spinAngle = 0;
     this._animFrame = 0;
     this._animTimer = 0;
+    this.themeColor = '#6a1b9a'; // royal purple — Amazon queen
   }
 
   get ultDamage() { return 42; }

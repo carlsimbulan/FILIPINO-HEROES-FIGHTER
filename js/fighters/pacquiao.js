@@ -27,6 +27,7 @@ class Pacquiao extends Fighter {
     this._ultGloveActive = false;
     this._animFrame = 0; // walk cycle
     this._animTimer = 0;
+    this.themeColor = '#1565c0'; // Philippine flag blue — boxing trunks
   }
 
   useSkillQ() {

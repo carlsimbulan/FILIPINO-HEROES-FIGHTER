@@ -31,6 +31,26 @@ class FightState {
     this.input.setActive(true);
     FX.clear();
     this._ultFlashTimer = 0;
+
+    // ── Intro cinematic ────────────────────────────────────
+    this._introTimer   = 0;
+    this._introActive  = true;
+    this._introSnapped = false;
+    this._introStartX  = { p: -this.player.width - 40, a: CANVAS_WIDTH + 10 };
+    this._introTargetX = { p: this.player.x, a: this.ai.x };
+    this.player.x = this._introStartX.p;
+    this.ai.x     = this._introStartX.a;
+
+    // ── Combo counters ─────────────────────────────────────
+    this._comboP             = 0;
+    this._comboAI            = 0;
+    this._comboScaleTimerP   = 0;
+    this._comboScaleTimerAI  = 0;
+    this._lastPlayerWasHurt  = false;
+    this._lastAIWasHurt      = false;
+
+    // ── Afterimage frame counter ───────────────────────────
+    this._frameCount = 0;
   }
 
   exit() {
@@ -51,6 +71,33 @@ class FightState {
 
   update(dt) {
     if (this._roundOver) return;
+
+    // ── Intro cinematic gating ─────────────────────────────
+    if (this._introActive) {
+      this._introTimer += dt;
+
+      // Slide fighters in using easeOutQuad
+      const easeT = Math.min(this._introTimer / 1.0, 1);
+      const ease  = 1 - Math.pow(1 - easeT, 2);
+      this.player.x = this._introStartX.p + (this._introTargetX.p - this._introStartX.p) * ease;
+      this.ai.x     = this._introStartX.a + (this._introTargetX.a - this._introStartX.a) * ease;
+
+      if (this._introTimer >= 1.0 && !this._introSnapped) {
+        this.player.x    = this._introTargetX.p;
+        this.ai.x        = this._introTargetX.a;
+        this._introSnapped = true;
+      }
+      if (this._introTimer >= 2.0) {
+        this._introActive = false;
+      } else {
+        this.input.update(); // consume but ignore input during intro
+        FX.update(dt);
+        VisualEnhancer.ScreenShaker.update(dt);
+        return;
+      }
+    }
+
+    this._frameCount = (this._frameCount || 0) + 1;
 
     const p = this.player;
     const a = this.ai;
@@ -173,6 +220,51 @@ class FightState {
 
     this.input.update();
     FX.update(dt);
+
+    // ── Visual enhancement timers ──────────────────────────
+    // Ghost bar and damage flash decay
+    for (const f of [p, a]) {
+      if (f.damageFlashTimer    > 0) f.damageFlashTimer    = Math.max(0, f.damageFlashTimer    - dt);
+      if (f._ghostBarDecayTimer > 0) f._ghostBarDecayTimer = Math.max(0, f._ghostBarDecayTimer - dt);
+    }
+
+    // Combo scale pop timers
+    if (this._comboScaleTimerP  > 0) this._comboScaleTimerP  = Math.max(0, this._comboScaleTimerP  - dt);
+    if (this._comboScaleTimerAI > 0) this._comboScaleTimerAI = Math.max(0, this._comboScaleTimerAI - dt);
+
+    // Combo reset when opponent recovers from hurt
+    if (p.state !== 'hurt' && this._lastPlayerWasHurt) this._comboAI = 0;
+    if (a.state !== 'hurt' && this._lastAIWasHurt)     this._comboP  = 0;
+    this._lastPlayerWasHurt = p.state === 'hurt';
+    this._lastAIWasHurt     = a.state === 'hurt';
+
+    // Skill ready-flash timers
+    for (const sk of [p.skills.q, p.skills.e, p.skills.c]) {
+      if ((sk._prevCd || 0) > 0 && sk.cd === 0) sk._readyFlashTimer = 0.2;
+      if (sk._readyFlashTimer > 0) sk._readyFlashTimer = Math.max(0, sk._readyFlashTimer - dt);
+      sk._prevCd = sk.cd;
+    }
+    // Flicker skill ready-flash
+    const flickerSk = { cd: p._flickerCd || 0, _prevCd: p._flickerPrevCd || 0 };
+    if (flickerSk._prevCd > 0 && flickerSk.cd === 0) p._flickerReadyFlash = 0.2;
+    if ((p._flickerReadyFlash || 0) > 0) p._flickerReadyFlash = Math.max(0, p._flickerReadyFlash - dt);
+    p._flickerPrevCd = p._flickerCd || 0;
+
+    // ScreenShaker + AfterimageSystem updates
+    VisualEnhancer.ScreenShaker.update(dt);
+    VisualEnhancer.AfterimageSystem.update();
+
+    // Afterimage recording for skill_e (every 3 frames) and ultimate
+    for (const [fighter, snapshotIndex] of [[p, 0],[a, 0]]) {
+      if (fighter.state === 'skill_e' && this._frameCount % 3 === 0) {
+        const buf = VisualEnhancer.AfterimageSystem._buffers.get(fighter);
+        const idx = buf ? buf.length : 0;
+        VisualEnhancer.AfterimageSystem.recordSkillE(fighter, idx);
+      }
+      if (fighter.state === 'ultimate') {
+        VisualEnhancer.AfterimageSystem.recordUltimate(fighter);
+      }
+    }
   }
 
   _resolveHit(attacker, defender) {
@@ -208,7 +300,7 @@ class FightState {
 
     if (attacker.attackType === 'free') {
       Audio.playFreeHit();
-      FX.hitImpact(hx, hy, attacker instanceof LapuLapu ? '#bdc3c7' : '#e74c3c');
+      FX.hitImpact(hx, hy, attacker instanceof LapuLapu ? '#bdc3c7' : '#e74c3c', 'free');
       FX.slashTrail(hx, hy, attacker.facingRight ? 1 : -1,
         attacker instanceof LapuLapu ? '#bdc3c7' : '#e74c3c');
       FX._particles.push({
@@ -225,10 +317,31 @@ class FightState {
     } else {
       Audio.playHit();
       const col = attacker.attackType === 'ult' ? '#ffe066' : attacker.attackType === 'e_spin' ? '#ffe066' : '#fff';
-      FX.hitImpact(hx, hy, col);
+      FX.hitImpact(hx, hy, col, attacker.attackType);
       if (attacker.attackType === 'ult') FX.ultGloveShockwave(hx, hy);
       else FX.slashTrail(hx, hy, attacker.facingRight ? 1 : -1, col);
     }
+
+    // ── ScreenShaker on impact ─────────────────────────────
+    if (attacker.attackType === 'ult') {
+      VisualEnhancer.ScreenShaker.queue(10, 0.35);
+    } else if (attacker.attackType === 'heavy' || attacker.attackType === 'e_spin') {
+      VisualEnhancer.ScreenShaker.queue(5, 0.18);
+    }
+
+    // ── Combo counter ──────────────────────────────────────
+    if (defender.state === 'hurt') {
+      if (attacker === this.player) {
+        this._comboP++;
+        this._comboScaleTimerP = 0.12;
+      } else {
+        this._comboAI++;
+        this._comboScaleTimerAI = 0.12;
+      }
+    }
+
+    // ── Flicker afterimage on use ──────────────────────────
+    // (recorded in fighter.useFlicker via a hook — no extra code needed here)
   }
 
   _resolveStunHit(attacker, defender) {
@@ -244,14 +357,33 @@ class FightState {
     attacker.lastAttackDamageDealt = true;
     Audio.playStun();
     FX.stunEffect(defender.x + defender.width / 2, defender.y);
-    FX.hitImpact(defender.x + defender.width / 2, defender.y + 30, '#ff4444');
+    FX.hitImpact(defender.x + defender.width / 2, defender.y + 30, '#ff4444', 'q_stun');
+    VisualEnhancer.ScreenShaker.queue(4, 0.15);
   }
 
   render(ctx) {
-    Renderer.drawBackground(ctx);
-    FX.render(ctx);
+    const focusX = (this.player.x + this.player.width / 2 +
+                    this.ai.x     + this.ai.width     / 2) / 2;
+
+    // ── World layer (affected by screen shake) ─────────────
+    VisualEnhancer.ScreenShaker.begin(ctx);
+
+    Renderer.drawBackground(ctx, focusX);
+
+    // Afterimages before sprites
+    VisualEnhancer.AfterimageSystem.renderSnapshots(ctx, this.player);
+    VisualEnhancer.AfterimageSystem.renderSnapshots(ctx, this.ai);
+
     Renderer.drawFighter(ctx, this.player);
     Renderer.drawFighter(ctx, this.ai);
+    FX.render(ctx);
+
+    VisualEnhancer.ScreenShaker.end(ctx);
+
+    // ── Bloom (outside shake, before HUD) ─────────────────
+    VisualEnhancer.drawBloomOverlay(ctx, this._collectBloomSources());
+
+    // ── HUD layer (fixed screen positions) ────────────────
     Renderer.drawHealthBars(ctx, this.player, this.ai);
     this._drawSkillHUD(ctx, this.player);
 
@@ -265,7 +397,17 @@ class FightState {
     ctx.font = '10px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('A/D:Move  W/Space:Jump  Z:Light  X:Heavy  LClick:FreeHit  Q:Skill1  E:Skill2  C:Block  V:ULTIMATE  R:Flicker', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 10);
-    ctx.textAlign = 'left';  }
+    ctx.textAlign = 'left';
+
+    // ── Combo counters ─────────────────────────────────────
+    this._drawComboCounter(ctx, this.player, this._comboP,  this._comboScaleTimerP);
+    this._drawComboCounter(ctx, this.ai,     this._comboAI, this._comboScaleTimerAI);
+
+    // ── Intro overlay (drawn on top of everything) ─────────
+    if (this._introActive || this._introTimer < 2.0) {
+      this._drawIntroOverlay(ctx);
+    }
+  }
 
   _drawSkillHUD(ctx, p) {
     const startX = 16;
@@ -325,6 +467,32 @@ class FightState {
       ctx.lineWidth = 2;
       ctx.strokeRect(bx, by, boxW, boxH);
 
+      // ── Cooldown ring arc ──────────────────────────────
+      if (!sk.used && sk.cdMax > 0 && sk.cd > 0) {
+        const sweep   = (sk.cd / sk.cdMax) * Math.PI * 2;
+        const centerX = bx + boxW / 2;
+        const centerY = by + boxH / 2;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+        ctx.lineWidth   = 3;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 15, -Math.PI / 2, -Math.PI / 2 + sweep, false);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // ── Ready flash ────────────────────────────────────
+      const flashTimer = sk.key
+        ? (p.skills[sk.key] ? p.skills[sk.key]._readyFlashTimer : 0)
+        : (sk.isFlicker ? (p._flickerReadyFlash || 0) : 0);
+      if (flashTimer > 0) {
+        ctx.save();
+        ctx.globalAlpha = (flashTimer / 0.2) * 0.4;
+        ctx.fillStyle   = '#00ff88';
+        ctx.fillRect(bx, by, boxW, boxH);
+        ctx.restore();
+      }
+
       // inner highlight top edge
       if (!onCd && !sk.used) {
         ctx.fillStyle = 'rgba(184,216,248,0.08)';
@@ -366,5 +534,101 @@ class FightState {
     ctx.fillStyle = 'rgba(248,183,0,0.4)';
     ctx.font = '8px monospace';
     ctx.fillText('SKILLS', startX, baseY - 4);
+  }
+
+  // ── Bloom source collection ────────────────────────────────────────────────
+  _collectBloomSources() {
+    const sources = [];
+    for (const f of [this.player, this.ai]) {
+      const cx = f.x + f.width  / 2;
+      const cy = f.y + f.height / 2;
+      if (f.state === 'ultimate')
+        sources.push({ x: cx, y: cy, radius: 90, color: f.themeColor || '#ffe066' });
+      if (f.skills.q.active)
+        sources.push({ x: cx, y: cy, radius: 60, color: '#e67e22' });
+      if (f.stunTimer > 0)
+        sources.push({ x: cx, y: f.y, radius: 40, color: '#ffe066' });
+    }
+    return sources; // drawBloomOverlay caps at 6 internally
+  }
+
+  // ── Combo counter label ────────────────────────────────────────────────────
+  _drawComboCounter(ctx, fighter, count, scaleTimer) {
+    if (count < 2) return;
+    const cx = fighter.x + fighter.width / 2;
+    const ty = fighter.y - 24;
+
+    const baseScale = count >= 5 ? 1.3 : 1.0;
+    const popScale  = scaleTimer > 0
+      ? baseScale + (scaleTimer / 0.12) * 0.4
+      : baseScale;
+
+    ctx.save();
+    ctx.translate(cx, ty);
+    ctx.scale(popScale, popScale);
+    ctx.translate(-cx, -ty);
+
+    const fontSize = count >= 5 ? 22 : 17;
+    const color    = count >= 5 ? '#ff6b35' : '#ffe066';
+
+    ctx.font        = `bold ${fontSize}px monospace`;
+    ctx.textAlign   = 'center';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth   = 3;
+    ctx.strokeText(`${count} HIT COMBO!`, cx, ty);
+    ctx.fillStyle   = color;
+    ctx.fillText(`${count} HIT COMBO!`, cx, ty);
+
+    if (count >= 10) {
+      ctx.font        = 'bold 13px monospace';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth   = 2;
+      ctx.strokeText('LEGENDARY!', cx, ty + 18);
+      ctx.fillStyle   = '#ff1744';
+      ctx.fillText('LEGENDARY!', cx, ty + 18);
+    }
+    ctx.restore();
+    ctx.textAlign = 'left';
+  }
+
+  // ── Fight intro overlay ────────────────────────────────────────────────────
+  _drawIntroOverlay(ctx) {
+    const t = this._introTimer;
+    const W = CANVAS_WIDTH;
+
+    // Fighter names fade in 0–0.5s
+    if (t <= 0.5) {
+      const alpha = t / 0.5;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font        = 'bold 28px monospace';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth   = 3;
+      ctx.textAlign   = 'center';
+      ctx.strokeText(this.player.name, W * 0.25, CANVAS_HEIGHT / 2 - 40);
+      ctx.fillStyle = '#ffe066';
+      ctx.fillText(this.player.name,   W * 0.25, CANVAS_HEIGHT / 2 - 40);
+      ctx.strokeText(this.ai.name, W * 0.75, CANVAS_HEIGHT / 2 - 40);
+      ctx.fillText(this.ai.name,   W * 0.75, CANVAS_HEIGHT / 2 - 40);
+      ctx.restore();
+    }
+
+    // "FIGHT!" label scales in 1.5–1.85s
+    if (t >= 1.5) {
+      const progress = Math.min(1, (t - 1.5) / 0.35);
+      const scale    = Math.max(1.0, 2.0 - progress);
+      ctx.save();
+      ctx.translate(W / 2, CANVAS_HEIGHT / 2);
+      ctx.scale(scale, scale);
+      ctx.font        = 'bold 52px monospace';
+      ctx.textAlign   = 'center';
+      ctx.strokeStyle = '#e67e22';
+      ctx.lineWidth   = 5;
+      ctx.strokeText('FIGHT!', 0, 0);
+      ctx.fillStyle   = '#ffe066';
+      ctx.fillText('FIGHT!', 0, 0);
+      ctx.restore();
+    }
+    ctx.textAlign = 'left';
   }
 }

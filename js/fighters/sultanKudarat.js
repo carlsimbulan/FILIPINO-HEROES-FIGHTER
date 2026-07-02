@@ -26,6 +26,7 @@ class SultanKudarat extends Fighter {
     this._armorHitsLeft = 0; // spirit armor absorb count
     this._animFrame = 0;
     this._animTimer = 0;
+    this.themeColor = '#e65100'; // amber-orange — Maguindanao royalty
   }
 
   get ultDamage() { return 50; }

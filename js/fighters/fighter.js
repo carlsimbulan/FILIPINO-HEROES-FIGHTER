@@ -50,6 +50,12 @@ class Fighter {
     // double jump
     this._jumpsLeft = 2;
 
+    // ── Visual enhancement fields ──────────────────────────
+    this.themeColor          = '#888888'; // overridden by subclasses
+    this.damageFlashTimer    = 0;         // seconds; drives white health bar flash
+    this.ghostBarHealth      = this.health; // pre-damage health snapshot
+    this._ghostBarDecayTimer = 0;         // tracks 0.8s ghost bar shrink
+
     // place on ground using live globals (set by main.js resize)
     this.y = GROUND_Y - GROUND_HEIGHT - this.height;
   }
@@ -79,6 +85,10 @@ class Fighter {
   applyDamage(amount) {
     if (this.state === 'dead') return;
     if (this.isBlocking) return;
+    // Snapshot health before decrement for ghost bar and flash
+    this.ghostBarHealth      = this.health;
+    this.damageFlashTimer    = 0.25;
+    this._ghostBarDecayTimer = 0.8;
     this.health = Math.max(0, this.health - amount);
     if (this.health === 0) {
       this.state = 'dead';
