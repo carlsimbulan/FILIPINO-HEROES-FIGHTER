@@ -41,6 +41,11 @@ class FriendDrawer {
   }
 
   destroy() {
+    // Clean up presence listeners
+    if (typeof PVPClient !== 'undefined' && PVPClient.socket) {
+      PVPClient.socket.off('pvp:friend_came_online');
+      PVPClient.socket.off('pvp:friend_went_offline');
+    }
     if (this._drawer && this._drawer.parentNode)   this._drawer.parentNode.removeChild(this._drawer);
     if (this._overlay && this._overlay.parentNode) this._overlay.parentNode.removeChild(this._overlay);
     this._drawer = null;
@@ -151,12 +156,58 @@ class FriendDrawer {
       this._body.innerHTML = '<div style="color:#e74c3c;text-align:center;padding:24px;font-size:11px;">Could not load friends.<br><span style="color:#64748B;font-size:10px;">' + e.message + '</span></div>';
       return;
     }
+
+    const friendUsernames = (this._data.friends || []).map(f => f.username);
+
+    if (
+      typeof PVPClient !== 'undefined' &&
+      PVPClient.socket &&
+      PVPClient.socket.connected
+    ) {
+      // Register presence and get initial online list in one shot
+      await new Promise((resolve) => {
+        const timeout = setTimeout(resolve, 1500);
+        PVPClient.socket.once('pvp:online_status', ({ online }) => {
+          clearTimeout(timeout);
+          this._onlineFriends = new Set(online || []);
+          resolve();
+        });
+        PVPClient.socket.emit('pvp:notify_presence', { friends: friendUsernames });
+      });
+
+      // Listen for realtime presence changes
+      this._setupPresenceListeners();
+    } else {
+      this._onlineFriends = new Set();
+    }
+
     this._render();
+  }
+
+  _setupPresenceListeners() {
+    if (!PVPClient || !PVPClient.socket) return;
+
+    // Remove old listeners first to avoid duplicates
+    PVPClient.socket.off('pvp:friend_came_online');
+    PVPClient.socket.off('pvp:friend_went_offline');
+
+    PVPClient.socket.on('pvp:friend_came_online', ({ username }) => {
+      if (!this._onlineFriends) this._onlineFriends = new Set();
+      this._onlineFriends.add(username);
+      if (this._isOpen) this._render(); // re-render if drawer is open
+    });
+
+    PVPClient.socket.on('pvp:friend_went_offline', ({ username }) => {
+      if (this._onlineFriends) this._onlineFriends.delete(username);
+      if (this._isOpen) this._render();
+    });
   }
 
   _render() {
     this._body.innerHTML = '';
     const { friends, incoming, outgoing } = this._data;
+    const online  = (friends || []).filter(f => this._onlineFriends && this._onlineFriends.has(f.username));
+    const offline = (friends || []).filter(f => !this._onlineFriends || !this._onlineFriends.has(f.username));
 
     // ── Incoming requests section ──────────────────────
     if (incoming && incoming.length > 0) {
@@ -169,12 +220,24 @@ class FriendDrawer {
       this._body.appendChild(sec);
     }
 
-    // ── Friends list section ───────────────────────────
+    // ── Online friends section ─────────────────────────
+    if (online.length > 0) {
+      const sec = document.createElement('div');
+      sec.style.cssText = 'padding:0 14px 10px;border-bottom:1px solid rgba(39,174,96,0.15);margin-bottom:4px;';
+      sec.innerHTML = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:#27ae60;display:inline-block;box-shadow:0 0 5px #27ae60;"></span>' +
+        '<span style="color:#27ae60;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:bold;">Online (' + online.length + ')</span></div>';
+      online.forEach(f => sec.appendChild(this._renderFriendEntry(f, true)));
+      this._body.appendChild(sec);
+    }
+
+    // ── Offline friends section ────────────────────────
     const sec2 = document.createElement('div');
     sec2.style.cssText = 'padding:0 14px;';
     const lbl = document.createElement('div');
-    lbl.style.cssText = 'color:#B8D8F8;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:bold;';
-    lbl.textContent = 'Friends (' + friends.length + ')';
+    lbl.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px;';
+    lbl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#64748B;display:inline-block;"></span>' +
+      '<span style="color:#64748B;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:bold;">Offline (' + offline.length + ')</span>';
     sec2.appendChild(lbl);
 
     if (friends.length === 0) {
@@ -183,7 +246,7 @@ class FriendDrawer {
       empty.textContent = 'No friends yet. Add someone!';
       sec2.appendChild(empty);
     } else {
-      friends.forEach(f => sec2.appendChild(this._renderFriendEntry(f)));
+      offline.forEach(f => sec2.appendChild(this._renderFriendEntry(f, false)));
     }
 
     // ── Outgoing requests hint ─────────────────────────
@@ -198,19 +261,22 @@ class FriendDrawer {
     this._body.appendChild(sec2);
   }
 
-  _renderFriendEntry(friend) {
+  _renderFriendEntry(friend, isOnline) {
     const av = (typeof PlayerStats !== 'undefined') ? PlayerStats.getAvatarById(friend.avatar || 'lapu') : { src: 'hereoes images/lapu-lapu.png' };
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(184,216,248,0.07);cursor:pointer;transition:background 0.15s;';
     row.onmouseover = () => { row.style.background = 'rgba(58,136,232,0.06)'; };
     row.onmouseout  = () => { row.style.background = 'transparent'; };
 
-    // Avatar with frame canvas overlay — matches shop/profile style
+    // Avatar with frame canvas overlay + online indicator
     const avatarWrap = document.createElement('div');
     avatarWrap.style.cssText = 'position:relative;width:42px;height:42px;flex-shrink:0;';
     avatarWrap.innerHTML =
       '<img src="' + av.src + '" style="position:absolute;top:2px;left:2px;width:38px;height:38px;object-fit:cover;object-position:top;z-index:1;"/>' +
-      '<canvas width="42" height="42" style="position:absolute;top:0;left:0;z-index:2;pointer-events:none;"></canvas>';
+      '<canvas width="42" height="42" style="position:absolute;top:0;left:0;z-index:2;pointer-events:none;"></canvas>' +
+      (isOnline
+        ? '<span style="position:absolute;bottom:1px;right:1px;width:10px;height:10px;border-radius:50%;background:#27ae60;border:2px solid rgba(8,14,28,0.97);z-index:3;box-shadow:0 0 4px #27ae60;"></span>'
+        : '');
     row.appendChild(avatarWrap);
 
     // Animate the frame canvas
@@ -495,6 +561,22 @@ class FriendDrawer {
       this._showInviteModal(roomId, inviterUsername, game);
     };
     PVPClient.on('pvp:invite', this._pvpInviteHandler);
+
+    // Register presence so friends see us online immediately on login
+    // We fetch our friends list then notify the server
+    GameAPI.getFriends(this._username).then((res) => {
+      if (res && !res.error && PVPClient.socket && PVPClient.socket.connected) {
+        const friendUsernames = (res.friends || []).map(f => f.username);
+        if (friendUsernames.length > 0) {
+          // Register friends for presence push notifications
+          PVPClient.socket.emit('pvp:notify_presence', { friends: friendUsernames });
+          // Store for re-use if drawer opens
+          this._cachedFriendUsernames = friendUsernames;
+        }
+        // Set up presence listeners now so they work even before drawer opens
+        this._setupPresenceListeners();
+      }
+    }).catch(() => {});
   }
 
   stopListeningForInvites() {

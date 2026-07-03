@@ -51,6 +51,7 @@ function initPVP(io, getDb) {
   const sessions     = new Map(); // roomId → PVPSession
   const socketToUser = new Map(); // socketId → username
   const userToSocket = new Map(); // username → socketId
+  const userFriends  = new Map(); // username → Set<friendUsername> (for presence notifications)
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -115,6 +116,32 @@ function initPVP(io, getDb) {
       socket.join(`user:${username}`);
 
       console.log(`[PVP] auth: ${username} → ${socket.id}`);
+
+      // Notify this user's friends that they came online
+      // The client must send its friend list so we know who to notify
+      socket.on('pvp:notify_presence', ({ friends } = {}) => {
+        if (!Array.isArray(friends)) return;
+        // Store this user's friend list for offline notification
+        userFriends.set(username, new Set(friends));
+        // Tell each online friend that this user is now online
+        for (const friendUsername of friends) {
+          if (userToSocket.has(friendUsername)) {
+            io.to(`user:${friendUsername}`).emit('pvp:friend_came_online', { username });
+          }
+        }
+        // Tell this user which of their friends are already online
+        const onlineFriends = friends.filter(f => userToSocket.has(f));
+        socket.emit('pvp:online_status', { online: onlineFriends });
+      });
+    });
+
+    // ── pvp:check_online ──────────────────────────────────────────────────────
+    // { usernames: string[] }
+    // Returns which usernames from the provided list are currently connected.
+    socket.on('pvp:check_online', ({ usernames } = {}) => {
+      if (!Array.isArray(usernames)) return;
+      const online = usernames.filter(u => userToSocket.has(u));
+      socket.emit('pvp:online_status', { online });
     });
 
     // ── pvp:invite ────────────────────────────────────────────────────────────
@@ -374,10 +401,22 @@ function initPVP(io, getDb) {
     socket.on('disconnect', () => {
       const username = socketToUser.get(socket.id);
       if (!username) return;
-
       // Remove from tracking maps
       socketToUser.delete(socket.id);
       userToSocket.delete(username);
+
+      console.log(`[PVP] disconnect: ${username} (${socket.id})`);
+
+      // Notify friends that this user went offline
+      const friendsOfUser = userFriends.get(username);
+      if (friendsOfUser) {
+        for (const friendUsername of friendsOfUser) {
+          if (userToSocket.has(friendUsername)) {
+            io.to(`user:${friendUsername}`).emit('pvp:friend_went_offline', { username });
+          }
+        }
+        userFriends.delete(username);
+      }
 
       console.log(`[PVP] disconnect: ${username} (${socket.id})`);
 
