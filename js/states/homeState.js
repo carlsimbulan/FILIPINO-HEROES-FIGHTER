@@ -90,9 +90,9 @@ class HomeState {
   _createModal(html) {
     this._closeModal();
     const m = document.createElement('div');
-    m.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:999;pointer-events:all;';
-    m.innerHTML = '<div style="background:linear-gradient(180deg,#141e30,#0a0e18);border:2px solid rgba(58,136,232,0.4);box-shadow:0 0 60px rgba(2,79,203,0.3);padding:28px 32px;min-width:420px;max-width:580px;font-family:\'Georgia\',serif;position:relative;max-height:80vh;overflow-y:auto;">' +
-      '<button id="modal-close" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#94A3B8;font-size:20px;cursor:pointer;">\u2715</button>' +
+    m.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);display:flex;justify-content:center;align-items:center;z-index:999;pointer-events:all;';
+    m.innerHTML = '<div style="background:#000;border:4px dotted #2A3FE5;box-shadow:0 0 40px rgba(42,63,229,0.4);padding:24px 28px;min-width:420px;max-width:580px;font-family:\'Press Start 2P\',cursive;position:relative;max-height:80vh;overflow-y:auto;">' +
+      '<button id="modal-close" style="position:absolute;top:10px;right:12px;background:none;border:2px dotted #2A3FE5;color:#9CA3AF;font-size:10px;cursor:pointer;padding:4px 8px;font-family:\'Press Start 2P\',cursive;">\u2715</button>' +
       html + '</div>';
     document.getElementById('ui-overlay').appendChild(m);
     this._modal = m;
@@ -110,7 +110,7 @@ class HomeState {
     wrapper.style.cssText = 'width:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;height:100%;pointer-events:none;';
 
     const header = document.createElement('div');
-    header.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:rgba(6,10,22,0.55);border-bottom:1px solid rgba(184,216,248,0.15);pointer-events:all;box-sizing:border-box;';
+    header.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#000;border-bottom:4px dotted #2A3FE5;pointer-events:all;box-sizing:border-box;';
 
     const profileBtn = document.createElement('div');
     profileBtn.id = 'profile-btn';
@@ -134,41 +134,41 @@ class HomeState {
     rightBtns.style.cssText = 'display:flex;gap:10px;align-items:center;';
     const lbBtn = document.createElement('button');
     lbBtn.id = 'leaderboard-btn';
-    lbBtn.style.cssText = 'padding:8px 16px;font-family:\'Georgia\',serif;font-size:12px;font-weight:bold;background:rgba(8,14,28,0.6);color:#B8D8F8;border:1px solid rgba(58,136,232,0.4);cursor:pointer;letter-spacing:2px;transition:all 0.15s;';
-    lbBtn.onmouseover = function() { this.style.borderColor='#3A88E8'; this.style.color='#fff'; };
-    lbBtn.onmouseout  = function() { this.style.borderColor='rgba(58,136,232,0.4)'; this.style.color='#B8D8F8'; };
-    lbBtn.textContent = '\uD83C\uDFC6 LEADERBOARD';
+    lbBtn.style.cssText = 'padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#9CA3AF;border:4px dotted #2A3FE5;cursor:pointer;letter-spacing:1px;transition:all 0.15s;';
+    lbBtn.onmouseover = function() { this.style.borderColor='#5B6FFF'; this.style.color='#fff'; };
+    lbBtn.onmouseout  = function() { this.style.borderColor='#2A3FE5'; this.style.color='#9CA3AF'; };
+    lbBtn.textContent = '🏆 RANK';
     const settingsBtn = document.createElement('button');
     settingsBtn.id = 'settings-btn';
-    settingsBtn.style.cssText = 'padding:8px 14px;font-family:\'Georgia\',serif;font-size:12px;font-weight:bold;background:rgba(8,14,28,0.6);color:#94A3B8;border:1px solid rgba(184,216,248,0.2);cursor:pointer;letter-spacing:2px;transition:all 0.15s;';
-    settingsBtn.onmouseover = function() { this.style.borderColor='#F8B700'; this.style.color='#F8B700'; };
-    settingsBtn.onmouseout  = function() { this.style.borderColor='rgba(184,216,248,0.2)'; this.style.color='#94A3B8'; };
-    settingsBtn.textContent = '\u2699 SETTINGS';
+    settingsBtn.style.cssText = 'padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#9CA3AF;border:4px dotted #1A1A33;cursor:pointer;letter-spacing:1px;transition:all 0.15s;';
+    settingsBtn.onmouseover = function() { this.style.borderColor='#FFCC00'; this.style.color='#FFCC00'; };
+    settingsBtn.onmouseout  = function() { this.style.borderColor='#1A1A33'; this.style.color='#9CA3AF'; };
+    settingsBtn.textContent = '⚙ SET';
     const shopBtn = document.createElement('button');
     shopBtn.id = 'shop-btn';
-    shopBtn.style.cssText = 'padding:8px 14px;font-family:\'Georgia\',serif;font-size:12px;font-weight:bold;background:rgba(8,14,28,0.6);color:#F8B700;border:1px solid rgba(248,183,0,0.4);cursor:pointer;letter-spacing:2px;transition:all 0.15s;';
-    shopBtn.onmouseover = function() { this.style.borderColor='#F8B700'; this.style.background='rgba(248,183,0,0.1)'; };
-    shopBtn.onmouseout  = function() { this.style.borderColor='rgba(248,183,0,0.4)'; this.style.background='rgba(8,14,28,0.6)'; };
-    shopBtn.textContent = '\uD83D\uDED2 SHOP';
+    shopBtn.style.cssText = 'padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#FFCC00;border:4px dotted #FFCC00;cursor:pointer;letter-spacing:1px;transition:all 0.15s;';
+    shopBtn.onmouseover = function() { this.style.borderColor='#fff'; this.style.background='rgba(255,204,0,0.1)'; };
+    shopBtn.onmouseout  = function() { this.style.borderColor='#FFCC00'; this.style.background='#000'; };
+    shopBtn.textContent = '🛒 SHOP';
     rightBtns.appendChild(shopBtn);
     rightBtns.appendChild(lbBtn);
     rightBtns.appendChild(settingsBtn);
     // Friends toggle button
     const friendsBtn = document.createElement('button');
     friendsBtn.id = 'friends-btn';
-    friendsBtn.style.cssText = 'padding:8px 14px;font-family:\'Georgia\',serif;font-size:12px;font-weight:bold;background:rgba(8,14,28,0.6);color:#B8D8F8;border:1px solid rgba(58,136,232,0.4);cursor:pointer;letter-spacing:2px;transition:all 0.15s;';
-    friendsBtn.onmouseover = function() { this.style.borderColor='#F8B700'; this.style.color='#F8B700'; };
-    friendsBtn.onmouseout  = function() { this.style.borderColor='rgba(58,136,232,0.4)'; this.style.color='#B8D8F8'; };
+    friendsBtn.style.cssText = 'padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#9CA3AF;border:4px dotted #2A3FE5;cursor:pointer;letter-spacing:1px;transition:all 0.15s;';
+    friendsBtn.onmouseover = function() { this.style.borderColor='#FFCC00'; this.style.color='#FFCC00'; };
+    friendsBtn.onmouseout  = function() { this.style.borderColor='#2A3FE5'; this.style.color='#9CA3AF'; };
     friendsBtn.textContent = '👥 FRIENDS';
     rightBtns.appendChild(friendsBtn);
     header.appendChild(profileBtn); header.appendChild(titleEl); header.appendChild(rightBtns);
 
     const center = document.createElement('div');
-    center.style.cssText = 'background:rgba(8,14,28,0.15);border:1px solid rgba(184,216,248,0.25);box-shadow:0 8px 40px rgba(2,79,203,0.15);padding:28px 48px;text-align:center;font-family:\'Georgia\',serif;pointer-events:all;min-width:320px;';
+    center.style.cssText = 'background:#000;border:4px dotted #2A3FE5;box-shadow:0 0 24px rgba(42,63,229,0.3);padding:28px 40px;text-align:center;font-family:\'Press Start 2P\',cursive;pointer-events:all;min-width:320px;';
     center.innerHTML =
-      '<button id="home-start-btn" style="width:100%;padding:14px;font-family:\'Georgia\',serif;font-size:16px;font-weight:bold;background:linear-gradient(180deg,#024FCB,#023FA2);color:#F8B700;border:2px solid #3A88E8;cursor:pointer;letter-spacing:3px;text-transform:uppercase;transition:filter 0.15s;" onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'brightness(1)\'"> VS AI</button>' +
-      '<div style="margin-top:10px;color:#2a4060;font-size:10px;letter-spacing:1px;">── OR ──</div>' +
-      '<button id="home-pvp-btn" style="width:100%;margin-top:10px;padding:14px;font-family:\'Georgia\',serif;font-size:16px;font-weight:bold;background:linear-gradient(180deg,#6b1a6b,#4a0e4a);color:#F8B700;border:2px solid rgba(248,183,0,0.6);cursor:pointer;letter-spacing:3px;text-transform:uppercase;transition:filter 0.15s;" onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'brightness(1)\'">⚔ PVP</button>';
+      '<button id="home-start-btn" style="width:100%;padding:14px;font-family:\'Press Start 2P\',cursive;font-size:11px;background:#2A3FE5;color:#FFCC00;border:4px dotted #5B6FFF;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:filter 0.15s;" onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'brightness(1)\'"> VS AI</button>' +
+      '<div style="margin-top:10px;color:#1A1A33;font-size:8px;letter-spacing:1px;font-family:\'Press Start 2P\',cursive;">── OR ──</div>' +
+      '<button id="home-pvp-btn" style="width:100%;margin-top:10px;padding:14px;font-family:\'Press Start 2P\',cursive;font-size:11px;background:#000;color:#FFCC00;border:4px dotted #FFCC00;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:filter 0.15s;" onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'brightness(1)\'">⚔ PVP</button>';
 
     // ── Daily Quests panel (left side) ────────────────────
     const questPanel = document.createElement('div');
@@ -459,21 +459,21 @@ class HomeState {
     };
     // ── 3-tab layout: Overall | VS AI ▾ | PVP ───────────────
     var tabsHtml =
-      '<button class="lb-tab" data-tab="overall" style="padding:7px 16px;font-family:\'Georgia\',serif;font-size:11px;font-weight:bold;background:linear-gradient(180deg,#024FCB,#023FA2);color:#F8B700;border:1px solid #3A88E8;cursor:pointer;letter-spacing:1px;">OVERALL</button>' +
+      '<button class="lb-tab" data-tab="overall" style="padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#2A3FE5;color:#FFCC00;border:4px dotted #5B6FFF;cursor:pointer;letter-spacing:1px;">OVERALL</button>' +
       '<div style="position:relative;display:inline-block;">' +
-        '<button id="vsai-tab-btn" style="padding:7px 16px;font-family:\'Georgia\',serif;font-size:11px;font-weight:bold;background:rgba(14,21,32,0.7);color:#64748B;border:1px solid #1a3060;cursor:pointer;letter-spacing:1px;">VS AI ▾</button>' +
-        '<div id="vsai-dropdown" style="display:none;position:absolute;top:100%;left:0;z-index:500;background:rgba(10,14,24,0.98);border:1px solid rgba(58,136,232,0.35);min-width:120px;">' +
-          '<button class="vsai-opt" data-tab="easy"   style="display:block;width:100%;padding:9px 14px;background:none;border:none;border-bottom:1px solid rgba(58,136,232,0.1);color:#27ae60;font-family:Georgia,serif;font-size:11px;text-align:left;cursor:pointer;font-weight:bold;">EASY</button>' +
-          '<button class="vsai-opt" data-tab="medium" style="display:block;width:100%;padding:9px 14px;background:none;border:none;border-bottom:1px solid rgba(58,136,232,0.1);color:#F0A030;font-family:Georgia,serif;font-size:11px;text-align:left;cursor:pointer;font-weight:bold;">MEDIUM</button>' +
-          '<button class="vsai-opt" data-tab="hard"   style="display:block;width:100%;padding:9px 14px;background:none;border:none;color:#e74c3c;font-family:Georgia,serif;font-size:11px;text-align:left;cursor:pointer;font-weight:bold;">HARD</button>' +
+        '<button id="vsai-tab-btn" style="padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#6B7280;border:4px dotted #1A1A33;cursor:pointer;letter-spacing:1px;">VS AI ▾</button>' +
+        '<div id="vsai-dropdown" style="display:none;position:absolute;top:100%;left:0;z-index:500;background:#000;border:4px dotted #2A3FE5;min-width:120px;">' +
+          '<button class="vsai-opt" data-tab="easy"   style="display:block;width:100%;padding:9px 14px;background:none;border:none;border-bottom:2px dotted #1A1A33;color:#00CC66;font-family:\'Press Start 2P\',cursive;font-size:8px;text-align:left;cursor:pointer;">EASY</button>' +
+          '<button class="vsai-opt" data-tab="medium" style="display:block;width:100%;padding:9px 14px;background:none;border:none;border-bottom:2px dotted #1A1A33;color:#FFB852;font-family:\'Press Start 2P\',cursive;font-size:8px;text-align:left;cursor:pointer;">MEDIUM</button>' +
+          '<button class="vsai-opt" data-tab="hard"   style="display:block;width:100%;padding:9px 14px;background:none;border:none;color:#FF4444;font-family:\'Press Start 2P\',cursive;font-size:8px;text-align:left;cursor:pointer;">HARD</button>' +
         '</div>' +
       '</div>' +
-      '<button class="lb-tab" data-tab="pvp" style="padding:7px 16px;font-family:\'Georgia\',serif;font-size:11px;font-weight:bold;background:rgba(14,21,32,0.7);color:#64748B;border:1px solid #1a3060;cursor:pointer;letter-spacing:1px;">⚔ PVP</button>';
+      '<button class="lb-tab" data-tab="pvp" style="padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#6B7280;border:4px dotted #1A1A33;cursor:pointer;letter-spacing:1px;">⚔ PVP</button>';
 
     var m = this._createModal(
-      '<div style="color:#F8B700;font-size:18px;font-weight:bold;margin-bottom:16px;text-align:center;">🏆 LEADERBOARD</div>' +
+      '<div style="color:#FFCC00;font-size:14px;font-family:\'Press Start 2P\',cursive;margin-bottom:16px;text-align:center;">🏆 LEADERBOARD</div>' +
       '<div id="lb-tabs" style="display:flex;gap:6px;margin-bottom:16px;justify-content:center;align-items:center;flex-wrap:wrap;">' + tabsHtml + '</div>' +
-      '<div id="lb-body" style="background:rgba(8,14,28,0.6);border:1px solid rgba(58,136,232,0.2);padding:14px;min-height:80px;"></div>'
+      '<div id="lb-body" style="background:#000;border:4px dotted #2A3FE5;padding:14px;min-height:80px;"></div>'
     );
 
     // ── Shared row builder ──────────────────────────────────
@@ -573,9 +573,9 @@ class HomeState {
         activeTab = btn.dataset.tab;
         m.querySelectorAll('.lb-tab').forEach(function(b) {
           var isActive = b.dataset.tab === activeTab;
-          b.style.background  = isActive ? 'linear-gradient(180deg,#024FCB,#023FA2)' : 'rgba(14,21,32,0.7)';
-          b.style.color       = isActive ? '#F8B700' : '#64748B';
-          b.style.borderColor = isActive ? '#3A88E8' : '#1a3060';
+          b.style.background  = isActive ? '#2A3FE5' : '#000';
+          b.style.color       = isActive ? '#FFCC00' : '#6B7280';
+          b.style.borderColor = isActive ? '#5B6FFF' : '#1A1A33';
         });
         renderLB(activeTab);
       });
@@ -596,11 +596,11 @@ class HomeState {
           vsaiDD.style.display = 'none';
           activeTab = opt.dataset.tab;
           m.querySelectorAll('.lb-tab').forEach(function(b) {
-            b.style.background='rgba(14,21,32,0.7)'; b.style.color='#64748B'; b.style.borderColor='#1a3060';
+            b.style.background='#000'; b.style.color='#6B7280'; b.style.borderColor='#1A1A33';
           });
-          vsaiBtn.style.background  = 'linear-gradient(180deg,#024FCB,#023FA2)';
-          vsaiBtn.style.color       = '#F8B700';
-          vsaiBtn.style.borderColor = '#3A88E8';
+          vsaiBtn.style.background  = '#2A3FE5';
+          vsaiBtn.style.color       = '#FFCC00';
+          vsaiBtn.style.borderColor = '#5B6FFF';
           vsaiBtn.textContent = 'VS AI · ' + activeTab.toUpperCase() + ' ▾';
           renderLB(activeTab);
         });

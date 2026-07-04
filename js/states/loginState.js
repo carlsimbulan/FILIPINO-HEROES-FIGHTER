@@ -70,25 +70,26 @@ class LoginState {
     const panel = document.createElement('div');
     panel.className = 'ui-panel';
     panel.style.cssText = `
-      background: rgba(8,14,28,0.15);
-      border: 1px solid rgba(184,216,248,0.25);
-      box-shadow: 0 8px 40px rgba(2,79,203,0.15);
-      padding: 28px 40px 32px;
+      background: rgba(0,0,0,0.92);
+      border: 4px dotted #2A3FE5;
+      box-shadow: 0 0 32px rgba(42,63,229,0.3);
+      padding: 28px 32px 32px;
       text-align: center;
-      font-family: 'Georgia', serif;
+      font-family: 'Press Start 2P', cursive;
       min-width: 360px;
     `;
 
     // Tab buttons
     const btnStyle = (active) =>
-      `padding:8px 24px;font-family:'Georgia',serif;font-size:12px;font-weight:bold;cursor:pointer;` +
-      `letter-spacing:2px;text-transform:uppercase;border:none;transition:all 0.15s;` +
-      `background:${active ? 'linear-gradient(180deg,#024FCB,#023FA2)' : 'rgba(14,21,32,0.6)'};` +
-      `color:${active ? '#F8B700' : '#64748B'};` +
-      `border-bottom:2px solid ${active ? '#F8B700' : 'transparent'};`;
+      `padding:8px 20px;font-family:'Press Start 2P',cursive;font-size:9px;cursor:pointer;` +
+      `letter-spacing:1px;text-transform:uppercase;transition:all 0.15s;` +
+      `background:${active ? '#2A3FE5' : '#000'};` +
+      `color:${active ? '#FFCC00' : '#6B7280'};` +
+      `border:4px dotted ${active ? '#5B6FFF' : '#2A3FE5'};` +
+      `border-bottom:${active ? '4px dotted #FFCC00' : '4px dotted #2A3FE5'};`;
 
     panel.innerHTML = `
-      <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid rgba(58,136,232,0.2);">
+      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:4px dotted #2A3FE5;">
         <button id="tab-login"    style="${btnStyle(true)}">LOGIN</button>
         <button id="tab-register" style="${btnStyle(false)}">REGISTER</button>
       </div>
@@ -96,22 +97,22 @@ class LoginState {
       <!-- LOGIN FORM -->
       <div id="login-form">
         <div style="margin-bottom:12px;text-align:left;">
-          <label style="color:#F8B700;font-size:11px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;">Username</label>
+          <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">Username</label>
           <input id="login-user" type="text" placeholder="Enter username" autocomplete="off"
-            style="width:100%;padding:10px 14px;font-family:monospace;font-size:14px;background:rgba(6,10,22,0.5);color:#e0e8ff;border:1px solid rgba(58,136,232,0.35);outline:none;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#3A88E8'" onblur="this.style.borderColor='rgba(58,136,232,0.35)'"/>
+            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px dotted #2A3FE5;outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
         </div>
         <div style="margin-bottom:18px;text-align:left;">
-          <label style="color:#F8B700;font-size:11px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;">Password</label>
+          <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">Password</label>
           <input id="login-pass" type="password" placeholder="Enter password"
-            style="width:100%;padding:10px 14px;font-family:monospace;font-size:14px;background:rgba(6,10,22,0.5);color:#e0e8ff;border:1px solid rgba(58,136,232,0.35);outline:none;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#3A88E8'" onblur="this.style.borderColor='rgba(58,136,232,0.35)'"/>
+            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px dotted #2A3FE5;outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
         </div>
-        <div id="login-error" style="color:#F43F5E;font-size:12px;min-height:18px;margin-bottom:12px;"></div>
+        <div id="login-error" style="color:#FF4444;font-size:8px;min-height:18px;margin-bottom:12px;font-family:'Press Start 2P',cursive;"></div>
         <button id="login-btn"
-          style="width:100%;padding:13px;font-family:'Georgia',serif;font-size:15px;font-weight:bold;
-                 background:linear-gradient(180deg,#024FCB,#023FA2);color:#F8B700;
-                 border:2px solid #3A88E8;cursor:pointer;letter-spacing:3px;text-transform:uppercase;transition:filter 0.15s;"
+          style="width:100%;padding:13px;font-family:'Press Start 2P',cursive;font-size:10px;
+                 background:#2A3FE5;color:#FFCC00;
+                 border:4px dotted #5B6FFF;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:filter 0.15s;"
           onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='brightness(1)'">
           ⚔ ENTER ARENA ⚔
         </button>
@@ -120,28 +121,28 @@ class LoginState {
       <!-- REGISTER FORM (hidden) -->
       <div id="register-form" style="display:none;">
         <div style="margin-bottom:12px;text-align:left;">
-          <label style="color:#F8B700;font-size:11px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;">Username</label>
+          <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">Username</label>
           <input id="reg-user" type="text" placeholder="Choose a username" autocomplete="off"
-            style="width:100%;padding:10px 14px;font-family:monospace;font-size:14px;background:rgba(6,10,22,0.5);color:#e0e8ff;border:1px solid rgba(58,136,232,0.35);outline:none;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#3A88E8'" onblur="this.style.borderColor='rgba(58,136,232,0.35)'"/>
+            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px dotted #2A3FE5;outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
         </div>
         <div style="margin-bottom:12px;text-align:left;">
-          <label style="color:#F8B700;font-size:11px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;">In-Game Name</label>
+          <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">In-Game Name</label>
           <input id="reg-ingame" type="text" placeholder="Your warrior name (shown in game)"
-            style="width:100%;padding:10px 14px;font-family:monospace;font-size:14px;background:rgba(6,10,22,0.5);color:#e0e8ff;border:1px solid rgba(58,136,232,0.35);outline:none;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#3A88E8'" onblur="this.style.borderColor='rgba(58,136,232,0.35)'"/>
+            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px dotted #2A3FE5;outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
         </div>
         <div style="margin-bottom:18px;text-align:left;">
-          <label style="color:#F8B700;font-size:11px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;">Password</label>
+          <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">Password</label>
           <input id="reg-pass" type="password" placeholder="Choose a password"
-            style="width:100%;padding:10px 14px;font-family:monospace;font-size:14px;background:rgba(6,10,22,0.5);color:#e0e8ff;border:1px solid rgba(58,136,232,0.35);outline:none;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#3A88E8'" onblur="this.style.borderColor='rgba(58,136,232,0.35)'"/>
+            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px dotted #2A3FE5;outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
         </div>
-        <div id="reg-error" style="color:#F43F5E;font-size:12px;min-height:18px;margin-bottom:12px;"></div>
+        <div id="reg-error" style="color:#FF4444;font-size:8px;min-height:18px;margin-bottom:12px;font-family:'Press Start 2P',cursive;"></div>
         <button id="reg-btn"
-          style="width:100%;padding:13px;font-family:'Georgia',serif;font-size:15px;font-weight:bold;
-                 background:linear-gradient(180deg,#027A40,#015C30);color:#F8B700;
-                 border:2px solid #27ae60;cursor:pointer;letter-spacing:3px;text-transform:uppercase;transition:filter 0.15s;"
+          style="width:100%;padding:13px;font-family:'Press Start 2P',cursive;font-size:10px;
+                 background:#00CC66;color:#000;
+                 border:4px dotted #00FF88;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:filter 0.15s;"
           onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='brightness(1)'">
           ⚔ CREATE ACCOUNT ⚔
         </button>
@@ -156,24 +157,24 @@ class LoginState {
       Audio.playButton();
       document.getElementById('login-form').style.display = 'block';
       document.getElementById('register-form').style.display = 'none';
-      document.getElementById('tab-login').style.background = 'linear-gradient(180deg,#024FCB,#023FA2)';
-      document.getElementById('tab-login').style.color = '#F8B700';
-      document.getElementById('tab-login').style.borderBottom = '2px solid #F8B700';
-      document.getElementById('tab-register').style.background = 'rgba(14,21,32,0.6)';
-      document.getElementById('tab-register').style.color = '#64748B';
-      document.getElementById('tab-register').style.borderBottom = '2px solid transparent';
+      document.getElementById('tab-login').style.background = '#2A3FE5';
+      document.getElementById('tab-login').style.color = '#FFCC00';
+      document.getElementById('tab-login').style.borderColor = '#5B6FFF';
+      document.getElementById('tab-register').style.background = '#000';
+      document.getElementById('tab-register').style.color = '#6B7280';
+      document.getElementById('tab-register').style.borderColor = '#2A3FE5';
     });
 
     document.getElementById('tab-register').addEventListener('click', () => {
       Audio.playButton();
       document.getElementById('login-form').style.display = 'none';
       document.getElementById('register-form').style.display = 'block';
-      document.getElementById('tab-register').style.background = 'linear-gradient(180deg,#024FCB,#023FA2)';
-      document.getElementById('tab-register').style.color = '#F8B700';
-      document.getElementById('tab-register').style.borderBottom = '2px solid #F8B700';
-      document.getElementById('tab-login').style.background = 'rgba(14,21,32,0.6)';
-      document.getElementById('tab-login').style.color = '#64748B';
-      document.getElementById('tab-login').style.borderBottom = '2px solid transparent';
+      document.getElementById('tab-register').style.background = '#2A3FE5';
+      document.getElementById('tab-register').style.color = '#FFCC00';
+      document.getElementById('tab-register').style.borderColor = '#5B6FFF';
+      document.getElementById('tab-login').style.background = '#000';
+      document.getElementById('tab-login').style.color = '#6B7280';
+      document.getElementById('tab-login').style.borderColor = '#2A3FE5';
     });
 
     // Login submit

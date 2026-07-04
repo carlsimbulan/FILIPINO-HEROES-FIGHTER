@@ -64,10 +64,10 @@ class FriendDrawer {
     this._drawer = document.createElement('div');
     this._drawer.style.cssText = [
       'position:fixed;top:0;right:0;width:300px;z-index:1100;',
-      'background:rgba(8,14,28,0.97);border-left:1px solid rgba(248,183,0,0.25);',
-      'border-top:1px solid rgba(248,183,0,0.15);',
-      'box-shadow:-6px 0 32px rgba(2,79,203,0.25);',
-      'display:flex;flex-direction:column;font-family:\'Georgia\',serif;',
+      'background:#000;border-left:4px dotted #2A3FE5;',
+      'border-top:4px dotted #2A3FE5;',
+      'box-shadow:-4px 0 24px rgba(42,63,229,0.3);',
+      'display:flex;flex-direction:column;font-family:\'Press Start 2P\',cursive;',
       'transform:translateX(100%);transition:transform 0.28s cubic-bezier(.4,0,.2,1);',
       'pointer-events:all;',
     ].join('');
