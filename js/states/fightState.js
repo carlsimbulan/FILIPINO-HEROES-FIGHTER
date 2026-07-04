@@ -50,6 +50,7 @@ class FightState {
     this._lastAIWasHurt      = false;
 
     // ── Afterimage frame counter ───────────────────────────
+    if (typeof BattleBG_Renderer !== 'undefined') BattleBG_Renderer.reset();
     this._frameCount = 0;
   }
 
@@ -70,6 +71,7 @@ class FightState {
   }
 
   update(dt) {
+    if (typeof BattleBG_Renderer !== 'undefined') BattleBG_Renderer.update(dt);
     if (this._roundOver) return;
 
     // ── Intro cinematic gating ─────────────────────────────

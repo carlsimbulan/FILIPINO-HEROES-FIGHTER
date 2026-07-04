@@ -58,6 +58,7 @@ class PVPFightState {
 
     this.input.setActive(true);
     FX.clear();
+    if (typeof BattleBG_Renderer !== 'undefined') BattleBG_Renderer.reset();
 
     // Listen for server-authoritative fight result and opponent disconnect
     this._onFightResult = ({ winner }) => {
@@ -111,6 +112,7 @@ class PVPFightState {
   // ── Update ────────────────────────────────────────────
 
   update(dt) {
+    if (typeof BattleBG_Renderer !== 'undefined') BattleBG_Renderer.update(dt);
     if (this._roundOver) return;
 
     const my  = this.myFighter;
@@ -309,7 +311,9 @@ class PVPFightState {
   // ── Render ────────────────────────────────────────────
 
   render(ctx) {
-    Renderer.drawBackground(ctx);
+    const focusX = (this.p1Fighter.x + this.p1Fighter.width / 2 +
+                    this.p2Fighter.x + this.p2Fighter.width / 2) / 2;
+    Renderer.drawBackground(ctx, focusX);
     FX.render(ctx);
     Renderer.drawFighter(ctx, this.p1Fighter);
     Renderer.drawFighter(ctx, this.p2Fighter);

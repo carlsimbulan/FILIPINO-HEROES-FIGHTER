@@ -34,22 +34,22 @@ class LoginState {
 
     // Title
     ctx.save();
-    ctx.shadowColor = '#024FCB'; ctx.shadowBlur = 24;
-    ctx.fillStyle = '#F8B700'; ctx.font = 'bold 44px serif';
+    ctx.shadowColor = '#2A3FE5'; ctx.shadowBlur = 20;
+    ctx.fillStyle = '#9CA3AF'; ctx.font = '18px \'Press Start 2P\'';
     ctx.textAlign = 'center';
     ctx.fillText('FILIPINO HEROES', CANVAS_WIDTH / 2, 100);
-    ctx.shadowColor = '#F8B700'; ctx.shadowBlur = 18;
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 58px serif';
-    ctx.fillText('FIGHTER', CANVAS_WIDTH / 2, 158);
+    ctx.shadowColor = '#FFCC00'; ctx.shadowBlur = 16;
+    ctx.fillStyle = '#FFCC00'; ctx.font = '28px \'Press Start 2P\'';
+    ctx.fillText('FIGHTER', CANVAS_WIDTH / 2, 150);
     ctx.restore();
 
     // Divider
     const grad = ctx.createLinearGradient(100, 0, CANVAS_WIDTH - 100, 0);
-    grad.addColorStop(0, 'rgba(248,183,0,0)');
-    grad.addColorStop(0.5, 'rgba(248,183,0,0.6)');
-    grad.addColorStop(1, 'rgba(248,183,0,0)');
-    ctx.strokeStyle = grad; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(100, 172); ctx.lineTo(CANVAS_WIDTH - 100, 172); ctx.stroke();
+    grad.addColorStop(0, 'rgba(42,63,229,0)');
+    grad.addColorStop(0.5, 'rgba(42,63,229,0.6)');
+    grad.addColorStop(1, 'rgba(42,63,229,0)');
+    ctx.strokeStyle = grad; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(100, 168); ctx.lineTo(CANVAS_WIDTH - 100, 168); ctx.stroke();
 
     this._drawRune(ctx, 55, 55);
     this._drawRune(ctx, CANVAS_WIDTH - 55, 55);
@@ -58,7 +58,7 @@ class LoginState {
   }
 
   _drawRune(ctx, cx, cy) {
-    ctx.save(); ctx.strokeStyle = 'rgba(248,183,0,0.25)'; ctx.lineWidth = 1;
+    ctx.save(); ctx.strokeStyle = 'rgba(42,63,229,0.4)'; ctx.lineWidth = 2;
     ctx.translate(cx, cy);
     ctx.strokeRect(-14, -14, 28, 28); ctx.strokeRect(-8, -8, 16, 16);
     ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(14, 0); ctx.moveTo(0, -14); ctx.lineTo(0, 14); ctx.stroke();

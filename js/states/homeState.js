@@ -65,21 +65,21 @@ class HomeState {
     ctx.fillStyle = 'rgba(6,10,16,0.45)';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     ctx.save();
-    ctx.shadowColor = '#024FCB'; ctx.shadowBlur = 30;
+    ctx.shadowColor = '#2A3FE5'; ctx.shadowBlur = 20;
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#F8B700'; ctx.font = 'bold 38px serif';
+    ctx.fillStyle = '#9CA3AF'; ctx.font = '14px \'Press Start 2P\'';
     ctx.fillText('FILIPINO HEROES', CANVAS_WIDTH / 2, 160);
-    ctx.shadowColor = '#F8B700'; ctx.shadowBlur = 20;
-    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 52px serif';
-    ctx.fillText('FIGHTER', CANVAS_WIDTH / 2, 220);
+    ctx.shadowColor = '#FFCC00'; ctx.shadowBlur = 16;
+    ctx.fillStyle = '#FFCC00'; ctx.font = '22px \'Press Start 2P\'';
+    ctx.fillText('FIGHTER', CANVAS_WIDTH / 2, 210);
     ctx.restore();
     const a = 0.4 + 0.2 * Math.sin(this._t * 2);
     const g = ctx.createLinearGradient(80, 0, CANVAS_WIDTH - 80, 0);
-    g.addColorStop(0, 'rgba(248,183,0,0)');
-    g.addColorStop(0.5, 'rgba(248,183,0,' + a + ')');
-    g.addColorStop(1, 'rgba(248,183,0,0)');
-    ctx.strokeStyle = g; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(80, 234); ctx.lineTo(CANVAS_WIDTH - 80, 234); ctx.stroke();
+    g.addColorStop(0, 'rgba(42,63,229,0)');
+    g.addColorStop(0.5, 'rgba(42,63,229,' + a + ')');
+    g.addColorStop(1, 'rgba(42,63,229,0)');
+    ctx.strokeStyle = g; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(80, 226); ctx.lineTo(CANVAS_WIDTH - 80, 226); ctx.stroke();
   }
 
   _closeModal() {
@@ -122,8 +122,8 @@ class HomeState {
       '<canvas id="profile-frame-canvas" width="42" height="42" style="position:absolute;top:0;left:0;z-index:2;pointer-events:none;"></canvas>' +
       '</div>' +
       '<div>' +
-        '<div style="color:#F8B700;font-size:13px;font-weight:bold;font-family:\'Georgia\',serif;">' + this._escapeHtml(this._username) + '</div>' +
-        '<div id="profile-header-coins" style="color:#94A3B8;font-size:10px;font-family:monospace;">\uD83C\uDFC6 ' + stats.wins.overall + ' wins &nbsp;|&nbsp; <span style="color:#F8B700;">\uD83E\uDE99 ' + (stats.coins || 0) + '</span></div>' +
+        '<div style="color:#FFCC00;font-size:9px;font-family:\'Press Start 2P\',cursive;">' + this._escapeHtml(this._username) + '</div>' +
+        '<div id="profile-header-coins" style="color:#9CA3AF;font-size:7px;font-family:\'Press Start 2P\',cursive;margin-top:4px;">🏆 ' + stats.wins.overall + ' wins &nbsp;|&nbsp; <span style="color:#FFCC00;">🪙 ' + (stats.coins || 0) + '</span></div>' +
       '</div>';
 
     const titleEl = document.createElement('div');
@@ -173,7 +173,7 @@ class HomeState {
     // ── Daily Quests panel (left side) ────────────────────
     const questPanel = document.createElement('div');
     questPanel.id = 'quest-panel';
-    questPanel.style.cssText = 'position:absolute;left:20px;top:50%;transform:translateY(-50%);width:220px;background:rgba(8,14,28,0.88);border:1px solid rgba(248,183,0,0.25);box-shadow:0 4px 24px rgba(2,79,203,0.15);font-family:\'Georgia\',serif;pointer-events:all;';
+    questPanel.style.cssText = 'position:absolute;left:20px;top:50%;transform:translateY(-50%);width:230px;background:#000;border:4px dotted #2A3FE5;box-shadow:0 0 16px rgba(42,63,229,0.25);font-family:\'Press Start 2P\',cursive;pointer-events:all;';
     this._renderQuestPanel(questPanel);
 
     const spacer = document.createElement('div'); spacer.style.height = '60px';
@@ -853,9 +853,9 @@ class HomeState {
     const mLeft  = Math.floor((msLeft % 3600000) / 60000);
     const resetStr = hLeft + 'h ' + mLeft + 'm';
 
-    let html = '<div style="padding:10px 12px;border-bottom:1px solid rgba(248,183,0,0.2);display:flex;align-items:center;justify-content:space-between;">' +
-      '<span style="color:#F8B700;font-size:12px;font-weight:bold;letter-spacing:2px;">📋 DAILY QUESTS</span>' +
-      '<span style="color:#64748B;font-size:9px;">Resets in ' + resetStr + '</span>' +
+    let html = '<div style="padding:10px 12px;border-bottom:4px dotted #2A3FE5;display:flex;align-items:center;justify-content:space-between;">' +
+      '<span style="color:#FFCC00;font-size:8px;font-family:\'Press Start 2P\',cursive;">📋 DAILY</span>' +
+      '<span style="color:#6B7280;font-size:7px;font-family:\'Press Start 2P\',cursive;">' + resetStr + '</span>' +
       '</div>';
 
     defs.forEach(function(def) {
@@ -866,18 +866,18 @@ class HomeState {
       const pct = Math.round((progress / def.target) * 100);
       const diffColor = def.diff === 'easy' ? '#27ae60' : def.diff === 'medium' ? '#F0A030' : '#e74c3c';
 
-      html += '<div style="padding:10px 12px;border-bottom:1px solid rgba(184,216,248,0.07);">' +
+      html += '<div style="padding:10px 12px;border-bottom:4px dotted #1A1A33;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">' +
-          '<span style="color:' + (claimed ? '#64748B' : '#fff') + ';font-size:10px;' + (claimed ? 'text-decoration:line-through;' : '') + '">' + def.label + '</span>' +
-          '<span style="color:#F8B700;font-size:10px;font-weight:bold;">🪙 ' + def.reward.toLocaleString() + '</span>' +
+          '<span style="color:' + (claimed ? '#444466' : '#fff') + ';font-size:7px;font-family:\'Press Start 2P\',cursive;' + (claimed ? 'text-decoration:line-through;' : '') + '">' + def.label + '</span>' +
+          '<span style="color:#FFCC00;font-size:7px;font-family:\'Press Start 2P\',cursive;">🪙 ' + def.reward.toLocaleString() + '</span>' +
         '</div>' +
-        '<div style="background:rgba(0,0,0,0.4);height:6px;border-radius:3px;margin-bottom:5px;overflow:hidden;">' +
-          '<div style="width:' + (claimed ? 100 : pct) + '%;height:100%;background:' + (claimed ? '#2a4060' : done ? diffColor : diffColor + '88') + ';border-radius:3px;transition:width 0.3s;"></div>' +
+        '<div style="background:#1A1A33;height:6px;margin-bottom:5px;overflow:hidden;border:2px dotted ' + (claimed ? '#444466' : diffColor) + ';">' +
+          '<div style="width:' + (claimed ? 100 : pct) + '%;height:100%;background:' + (claimed ? '#444466' : done ? diffColor : diffColor + '88') + ';transition:width 0.3s;"></div>' +
         '</div>' +
         '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-          '<span style="color:#64748B;font-size:9px;">' + (claimed ? 'Claimed ✓' : progress + ' / ' + def.target) + '</span>' +
+          '<span style="color:#6B7280;font-size:7px;font-family:\'Press Start 2P\',cursive;">' + (claimed ? 'DONE ✓' : progress + '/' + def.target) + '</span>' +
           (done && !claimed
-            ? '<button class="quest-claim-btn" data-questid="' + def.id + '" style="padding:3px 10px;font-family:\'Georgia\',serif;font-size:9px;font-weight:bold;background:linear-gradient(180deg,#027A40,#015C30);color:#F8B700;border:1px solid #27ae60;cursor:pointer;letter-spacing:1px;">CLAIM</button>'
+            ? '<button class="quest-claim-btn" data-questid="' + def.id + '" style="padding:4px 10px;font-family:\'Press Start 2P\',cursive;font-size:7px;background:#00CC66;color:#000;border:4px dotted #00FF88;cursor:pointer;letter-spacing:1px;">CLAIM</button>'
             : '') +
         '</div>' +
       '</div>';

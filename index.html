@@ -87,6 +87,29 @@
 
     /* ── Global UI element theme overrides ──────────────────── */
 
+    /* Fix Press Start 2P line-height everywhere */
+    * {
+      line-height: 1.8;
+    }
+
+    /* Modal content needs extra breathing room */
+    #ui-overlay div {
+      box-sizing: border-box;
+    }
+
+    /* Leaderboard rows — ensure grid items don't overflow */
+    .lb-row, .lb-row > * {
+      line-height: 2.0 !important;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Scrollable modal content */
+    #lb-body, #fp-grid {
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+
     /* All overlay panels / cards */
     .ui-panel > div,
     [style*="background:rgba(8,14,28"] {
@@ -157,6 +180,7 @@
   <script src="js/fighters/sultanKudarat.js"></script>
   <script src="js/fighters/luces.js"></script>
   <script src="js/input.js"></script>
+  <script src="js/battleBGRenderer.js"></script>
   <script src="js/renderer.js"></script>
   <script src="js/assets.js"></script>
   <script src="js/ai.js"></script>

@@ -132,7 +132,7 @@ class HeroSelectState {
       '<div style="position:relative;width:100%;max-height:420px;overflow:hidden;border:2px solid ' + hero.accent + '44;margin-bottom:14px;background:#050810;display:flex;align-items:center;justify-content:center;">' +
         '<img src="' + _heroImgMap[id] + '" style="max-height:420px;width:auto;max-width:100%;object-fit:contain;display:block;"/>' +
         '<div style="position:absolute;bottom:0;left:0;right:0;padding:14px 12px;background:linear-gradient(0deg,rgba(6,10,22,0.95) 60%,rgba(6,10,22,0));">' +
-          '<div style="color:#F8B700;font-size:20px;font-weight:bold;font-family:\'Georgia\',serif;">' + hero.name + '</div>' +
+          '<div style="color:#FFCC00;font-size:12px;font-family:\'Press Start 2P\',cursive;line-height:1.8;">' + hero.name + '</div>' +
           '<div style="color:' + hero.accent + ';font-size:10px;letter-spacing:3px;">' + hero.title + '</div>' +
         '</div>' +
       '</div>' +

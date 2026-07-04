@@ -2,6 +2,13 @@
 
 const Renderer = {
   drawBackground(ctx, focusX) {
+    // ── BattleBG_Renderer delegate (Filipino pixel art arena) ─────────────────
+    if (typeof BattleBG_Renderer !== 'undefined' &&
+        typeof BattleBG_Renderer.draw === 'function') {
+      BattleBG_Renderer.draw(ctx, focusX);
+      return;
+    }
+
     const W = CANVAS_WIDTH, H = CANVAS_HEIGHT;
     const groundY = GROUND_Y - GROUND_HEIGHT;
     const t = Date.now() / 1000;
