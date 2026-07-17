@@ -71,7 +71,7 @@ class LoginState {
     panel.className = 'ui-panel';
     panel.style.cssText = `
       background: rgba(0,0,0,0.92);
-      border: 4px dotted #2A3FE5;
+      border: 4px solid #2A3FE5;
       box-shadow: 0 0 32px rgba(42,63,229,0.3);
       padding: 28px 32px 32px;
       text-align: center;
@@ -85,11 +85,11 @@ class LoginState {
       `letter-spacing:1px;text-transform:uppercase;transition:all 0.15s;` +
       `background:${active ? '#2A3FE5' : '#000'};` +
       `color:${active ? '#FFCC00' : '#6B7280'};` +
-      `border:4px dotted ${active ? '#5B6FFF' : '#2A3FE5'};` +
-      `border-bottom:${active ? '4px dotted #FFCC00' : '4px dotted #2A3FE5'};`;
+      `border:4px solid ${active ? '#5B6FFF' : '#2A3FE5'};` +
+      `border-bottom:${active ? '4px solid #FFCC00' : '4px solid #2A3FE5'};`;
 
     panel.innerHTML = `
-      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:4px dotted #2A3FE5;">
+      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:4px solid #2A3FE5;">
         <button id="tab-login"    style="${btnStyle(true)}">LOGIN</button>
         <button id="tab-register" style="${btnStyle(false)}">REGISTER</button>
       </div>
@@ -99,20 +99,20 @@ class LoginState {
         <div style="margin-bottom:12px;text-align:left;">
           <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">Username</label>
           <input id="login-user" type="text" placeholder="Enter username" autocomplete="off"
-            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px dotted #2A3FE5;outline:none;box-sizing:border-box;"
+            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px solid #2A3FE5;outline:none;box-sizing:border-box;"
             onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
         </div>
         <div style="margin-bottom:18px;text-align:left;">
           <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">Password</label>
           <input id="login-pass" type="password" placeholder="Enter password"
-            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px dotted #2A3FE5;outline:none;box-sizing:border-box;"
+            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px solid #2A3FE5;outline:none;box-sizing:border-box;"
             onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
         </div>
         <div id="login-error" style="color:#FF4444;font-size:8px;min-height:18px;margin-bottom:12px;font-family:'Press Start 2P',cursive;"></div>
         <button id="login-btn"
           style="width:100%;padding:13px;font-family:'Press Start 2P',cursive;font-size:10px;
                  background:#2A3FE5;color:#FFCC00;
-                 border:4px dotted #5B6FFF;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:filter 0.15s;"
+                 border:4px solid #5B6FFF;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:filter 0.15s;"
           onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='brightness(1)'">
           ⚔ ENTER ARENA ⚔
         </button>
@@ -123,26 +123,26 @@ class LoginState {
         <div style="margin-bottom:12px;text-align:left;">
           <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">Username</label>
           <input id="reg-user" type="text" placeholder="Choose a username" autocomplete="off"
-            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px dotted #2A3FE5;outline:none;box-sizing:border-box;"
+            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px solid #2A3FE5;outline:none;box-sizing:border-box;"
             onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
         </div>
         <div style="margin-bottom:12px;text-align:left;">
           <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">In-Game Name</label>
           <input id="reg-ingame" type="text" placeholder="Your warrior name (shown in game)"
-            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px dotted #2A3FE5;outline:none;box-sizing:border-box;"
+            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px solid #2A3FE5;outline:none;box-sizing:border-box;"
             onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
         </div>
         <div style="margin-bottom:18px;text-align:left;">
           <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">Password</label>
           <input id="reg-pass" type="password" placeholder="Choose a password"
-            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px dotted #2A3FE5;outline:none;box-sizing:border-box;"
+            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px solid #2A3FE5;outline:none;box-sizing:border-box;"
             onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
         </div>
         <div id="reg-error" style="color:#FF4444;font-size:8px;min-height:18px;margin-bottom:12px;font-family:'Press Start 2P',cursive;"></div>
         <button id="reg-btn"
           style="width:100%;padding:13px;font-family:'Press Start 2P',cursive;font-size:10px;
                  background:#00CC66;color:#000;
-                 border:4px dotted #00FF88;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:filter 0.15s;"
+                 border:4px solid #00FF88;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:filter 0.15s;"
           onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='brightness(1)'">
           ⚔ CREATE ACCOUNT ⚔
         </button>

@@ -266,9 +266,9 @@ app.get('/api/leaderboard/pvp', async (req, res) => {
 app.post('/api/stats/buyframe', async (req, res) => {
   try {
     const { username, frameId } = req.body;
-    const frameCosts = { gold: 1000, fire: 10000, darkfire: 15000 };
+    const frameCosts = { green: 0, blue: 0, black: 0, gold: 1000, fire: 10000, darkfire: 15000 };
     const cost = frameCosts[frameId];
-    if (!cost && frameId !== 'none') return res.status(400).json({ error: 'Invalid frame' });
+    if (cost === undefined && frameId !== 'none') return res.status(400).json({ error: 'Invalid frame' });
 
     const user = await users().findOne({ username });
     if (!user) return res.status(404).json({ error: 'User not found' });
