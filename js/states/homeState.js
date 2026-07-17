@@ -143,7 +143,7 @@ class HomeState {
     settingsBtn.style.cssText = 'padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#9CA3AF;border:4px solid #1A1A33;cursor:pointer;letter-spacing:1px;transition:all 0.15s;';
     settingsBtn.onmouseover = function() { this.style.borderColor='#FFCC00'; this.style.color='#FFCC00'; };
     settingsBtn.onmouseout  = function() { this.style.borderColor='#1A1A33'; this.style.color='#9CA3AF'; };
-    settingsBtn.textContent = '⚙ SET';
+    settingsBtn.textContent = '⚙ SETTINGS';
     const shopBtn = document.createElement('button');
     shopBtn.id = 'shop-btn';
     shopBtn.style.cssText = 'padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#FFCC00;border:4px solid #FFCC00;cursor:pointer;letter-spacing:1px;transition:all 0.15s;';

@@ -10,7 +10,7 @@ const { Server } = require('socket.io');
 const { initPVP } = require('./pvpManager');
 
 const app  = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // ── MongoDB connection ─────────────────────────────────────
 // Replace the connection string with your Atlas URI
