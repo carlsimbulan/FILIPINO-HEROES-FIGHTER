@@ -18,7 +18,7 @@ const BattleBG_Renderer = {
   _cachedH:          0,
 
   // ── Constants ──────────────────────────────────────────────────────────────
-  _COLORS: ['#ff8c42', '#c8ff64', '#ffcce0'],
+  _COLORS: ['#a0c4ff', '#c8e6ff', '#e0ccff'],  // night: pale blue/purple glows
   _POOL_SIZE: 16,
 
   // ── reset() ────────────────────────────────────────────────────────────────
@@ -109,16 +109,16 @@ const BattleBG_Renderer = {
 
     if (!this._cachedSkyGrad) {
       this._cachedSkyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
-      this._cachedSkyGrad.addColorStop(0,   '#f4a440');
-      this._cachedSkyGrad.addColorStop(0.5, '#ffe08a');
-      this._cachedSkyGrad.addColorStop(1,   '#ffd060');
+      this._cachedSkyGrad.addColorStop(0,   '#02020f');  // deep midnight black
+      this._cachedSkyGrad.addColorStop(0.5, '#0a0a2e');  // dark navy
+      this._cachedSkyGrad.addColorStop(1,   '#1a1040');  // deep indigo near ground
     }
 
     if (!this._cachedGroundGrad) {
       this._cachedGroundGrad = ctx.createLinearGradient(0, groundY, 0, H);
-      this._cachedGroundGrad.addColorStop(0,   '#c0714f');
-      this._cachedGroundGrad.addColorStop(0.3, '#d4a55a');
-      this._cachedGroundGrad.addColorStop(1,   '#b06040');
+      this._cachedGroundGrad.addColorStop(0,   '#1a1a2e');  // dark stone
+      this._cachedGroundGrad.addColorStop(0.3, '#12122a');  // darker mid
+      this._cachedGroundGrad.addColorStop(1,   '#0a0a1a');  // near black base
     }
 
     if (!this._cachedVigGrad) {
@@ -131,31 +131,55 @@ const BattleBG_Renderer = {
     ctx.fillStyle = this._cachedSkyGrad;
     ctx.fillRect(0, 0, W, groundY);
 
-    // ── 3. Day/dusk tint overlay ───────────────────────────────────────────
-    const lt = this._lightTimer;
-    if (lt < 30) {
-      ctx.save();
-      ctx.globalAlpha = 0.06;
-      ctx.fillStyle   = '#f4a440';
-      ctx.fillRect(0, 0, W, groundY);
-      ctx.restore();
-    } else if (lt < 35) {
-      const bf = (lt - 30) / 5;
-      ctx.save();
-      ctx.globalAlpha = 0.06 * (1 - bf);
-      ctx.fillStyle   = '#f4a440';
-      ctx.fillRect(0, 0, W, groundY);
-      ctx.globalAlpha = 0.12 * bf;
-      ctx.fillStyle   = '#c0391b';
-      ctx.fillRect(0, 0, W, groundY);
-      ctx.restore();
-    } else {
-      ctx.save();
-      ctx.globalAlpha = 0.18;
-      ctx.fillStyle   = '#c0391b';
-      ctx.fillRect(0, 0, W, groundY);
-      ctx.restore();
+    // ── 2b. Stars ──────────────────────────────────────────────────────────
+    ctx.save();
+    // Use a seeded pattern based on canvas size so stars are stable
+    const starSeed = W * 31 + H * 17;
+    for (let s = 0; s < 60; s++) {
+      // Pseudo-random positions from seed
+      const sx = ((starSeed * (s + 1) * 2654435761) >>> 0) % W;
+      const sy = ((starSeed * (s + 1) * 2246822519) >>> 0) % Math.round(groundY * 0.85);
+      // Twinkle: each star has its own phase
+      const twinkle = 0.5 + 0.5 * Math.sin(this._frameCount * 0.03 + s * 1.3);
+      ctx.globalAlpha = 0.4 + 0.6 * twinkle;
+      ctx.fillStyle   = s % 5 === 0 ? '#c8d8ff' : '#ffffff';
+      const sz = s % 7 === 0 ? 2 : 1;
+      ctx.fillRect(sx, sy, sz, sz);
     }
+    ctx.restore();
+
+    // ── 2c. Moon ───────────────────────────────────────────────────────────
+    const moonX = Math.round(W * 0.82);
+    const moonY = Math.round(groundY * 0.18);
+    // Moon glow
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = '#c8d8ff';
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // Moon body (pixel-art: 4×4 blocks in a circle shape)
+    ctx.fillStyle = '#e8eeff';
+    const moonBlocks = [
+      [0,-2],[1,-2],[-1,-2],
+      [-2,-1],[-2,0],[-2,1],
+      [2,-1],[2,0],[2,1],
+      [-1,2],[0,2],[1,2],
+    ];
+    for (const [mx, my] of moonBlocks) {
+      ctx.fillRect(moonX + mx * 4, moonY + my * 4, 4, 4);
+    }
+    // Moon crater
+    ctx.fillStyle = '#c8d0e8';
+    ctx.fillRect(moonX + 4, moonY - 4, 4, 4);
+
+    // ── 3. Night moon-glow overlay ─────────────────────────────────────────
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle   = '#4060cc';   // cool blue moonlight tint
+    ctx.fillRect(0, 0, W, groundY);
+    ctx.restore();
 
     // ── 4. Parallax mid-ground layers ─────────────────────────────────────────
     if (focusX === undefined) focusX = W / 2;
@@ -178,7 +202,7 @@ const BattleBG_Renderer = {
     const mountTopY = Math.round(groundY * 0.42); // where mountain starts appearing
     // Draw mountains as silhouette with 4×4 grid-aligned blocks
     const blockSize = 4;
-    const mountColors = ['#7a8a6a', '#8a9a7a', '#6a7a5a'];
+    const mountColors = ['#1a2a3a', '#1e3040', '#162030'];
 
     // Define mountain profile: array of heights per 4px column
     for (let bx = overdrawStart; bx < overdrawEnd; bx += blockSize) {
@@ -203,7 +227,7 @@ const BattleBG_Renderer = {
     const bambooTopY = Math.round(groundY * 0.55); // bamboo starts lower
     const bambooBaseH = Math.round(groundY * 0.45);
     const bambooBlockSize = 4;
-    const bambooColors = ['#2d5a1b', '#3a6e22', '#4a8a30', '#2a4e18'];
+    const bambooColors = ['#0d1f0d', '#102510', '#142e14', '#0a1a0a'];
 
     for (let bx = overdrawStart; bx < overdrawEnd; bx += bambooBlockSize) {
       const nx = bx / W;
@@ -234,23 +258,23 @@ const BattleBG_Renderer = {
     ctx.fillRect(0, groundY, W, GROUND_HEIGHT);
 
     // Top-edge highlight
-    ctx.fillStyle = '#d4a55a';
+    ctx.fillStyle = '#2a2a4a';
     ctx.fillRect(0, groundY, W, 2);
 
     // Vertical tile cracks every 64px
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
     for (let cx = 64; cx < W; cx += 64) {
       ctx.fillRect(cx, groundY + 2, 2, GROUND_HEIGHT - 2);
     }
 
     // Horizontal offset cracks at +22px, offset 32px
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
     for (let cx = 32; cx < W; cx += 64) {
       ctx.fillRect(cx, groundY + 22, 1, GROUND_HEIGHT - 22);
     }
 
-    // Bamboo section markers every 128px
-    ctx.fillStyle = '#c8903a';
+    // Stone section markers every 128px
+    ctx.fillStyle = '#1e1e38';
     for (let cx = 0; cx < W; cx += 128) {
       ctx.fillRect(cx, groundY, 8, GROUND_HEIGHT);
     }
@@ -282,10 +306,10 @@ const BattleBG_Renderer = {
       ctx.fillStyle = '#8a6a4a';
       ctx.fillRect(bx - 1, by, 2, 40);
       // Banner body
-      ctx.fillStyle = '#c0391b';
+      ctx.fillStyle = '#2a1060';  // deep purple night banner
       ctx.fillRect(bx, by, 16, 24 + tipDY);
-      // Sun motif (3×3 at center)
-      ctx.fillStyle = '#f4a440';
+      // Moon motif (3×3 at center)
+      ctx.fillStyle = '#c8d8ff';  // pale moonlight
       ctx.fillRect(bx + 6, by + 10, 3, 3);
     }
 
