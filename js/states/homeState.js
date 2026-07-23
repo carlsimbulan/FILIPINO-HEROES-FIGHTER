@@ -673,114 +673,163 @@ class HomeState {
     var username = '';
     try { username = sessionStorage.getItem('fhf_rawusername') || ''; } catch(e) {}
 
-    var framesHtml = AVATAR_FRAMES.filter(f => f.id !== 'none').map(function(f) {
-      var owned   = (stats.framesOwned || ['none']).includes(f.id);
-      var borderCol = owned ? '#27ae60' : 'rgba(58,136,232,0.3)';
+    // Remove existing shop page if any
+    var existing = document.getElementById('shop-page');
+    if (existing) existing.remove();
 
-      // Determine button state
-      var btnHtml = '';
-      if (owned) {
-        var active = stats.frame === f.id;
-        btnHtml = '<div style="padding:6px 14px;font-family:\'Georgia\',serif;font-size:10px;font-weight:bold;background:rgba(39,174,96,0.15);color:#27ae60;border:1px solid #27ae60;display:inline-block;letter-spacing:1px;">' +
-          (active ? '✓ EQUIPPED' : '✓ OWNED') + '</div>';
-      } else if (f.unlockReq) {
-        // Free unlock frame — check if requirements met
-        var reqWins = f.unlockReq.wins;
-        var reqDiff = f.unlockReq.diff;
-        var curWins = stats.wins[reqDiff] || 0;
-        var met     = curWins >= reqWins;
-        var reqLabel = reqWins + ' ' + reqDiff[0].toUpperCase() + reqDiff.slice(1) + ' wins';
-        btnHtml = '<div style="font-size:9px;color:' + (met ? '#27ae60' : '#64748B') + ';margin-bottom:5px;">' +
-                  (met ? '✓ Unlocked!' : curWins + ' / ' + reqWins + ' ' + reqDiff + ' wins') + '</div>' +
-                  '<button class="frame-claim-btn" data-frame="' + f.id + '" ' +
-                  (met ? '' : 'disabled ') +
-                  'style="padding:6px 14px;font-family:\'Georgia\',serif;font-size:10px;font-weight:bold;background:' +
-                  (met ? 'linear-gradient(180deg,#027A40,#015C30)' : 'rgba(14,21,32,0.7)') +
-                  ';color:' + (met ? '#F8B700' : '#2a4060') + ';border:1px solid ' + (met ? '#27ae60' : '#1a3060') +
-                  ';cursor:' + (met ? 'pointer' : 'not-allowed') + ';letter-spacing:1px;">CLAIM</button>';
-      } else {
-        // Paid frame
-        var canAfford = (stats.coins || 0) >= f.cost;
-        btnHtml = '<button class="frame-buy-btn" data-frame="' + f.id + '" data-cost="' + f.cost + '" style="padding:6px 14px;font-family:\'Georgia\',serif;font-size:10px;font-weight:bold;background:' + (canAfford ? 'linear-gradient(180deg,#8B4500,#5a2d00)' : 'rgba(14,21,32,0.7)') + ';color:' + (canAfford ? '#F8B700' : '#2a4060') + ';border:1px solid ' + (canAfford ? '#c0a030' : '#1a3060') + ';cursor:' + (canAfford ? 'pointer' : 'not-allowed') + ';letter-spacing:1px;">BUY</button>';
+    var page = document.createElement('div');
+    page.id = 'shop-page';
+    page.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:500;display:flex;flex-direction:column;font-family:\'Press Start 2P\',cursive;pointer-events:all;overflow:hidden;';
+
+    // ── Header ──────────────────────────────────────────────
+    var header = document.createElement('div');
+    header.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:#000;border-bottom:4px solid #2A3FE5;box-sizing:border-box;flex-shrink:0;';
+    header.innerHTML =
+      '<button id="shop-back-btn" style="padding:7px 14px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#9CA3AF;border:4px solid #2A3FE5;cursor:pointer;letter-spacing:1px;transition:all 0.15s;" onmouseover="this.style.color=\'#fff\';this.style.borderColor=\'#5B6FFF\'" onmouseout="this.style.color=\'#9CA3AF\';this.style.borderColor=\'#2A3FE5\'">&#8592; BACK</button>' +
+      '<div style="color:#FFCC00;font-size:12px;letter-spacing:3px;">🛒 SHOP</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;background:rgba(255,204,0,0.08);border:2px solid rgba(255,204,0,0.3);padding:6px 14px;">' +
+        '<span style="font-size:14px;">🪙</span>' +
+        '<span id="shop-coin-display" style="color:#FFCC00;font-size:10px;">' + (stats.coins || 0).toLocaleString() + ' coins</span>' +
+      '</div>';
+
+    // ── Search bar ──────────────────────────────────────────
+    var searchBar = document.createElement('div');
+    searchBar.style.cssText = 'padding:14px 20px;background:#000;border-bottom:4px solid #1A1A33;flex-shrink:0;box-sizing:border-box;';
+    searchBar.innerHTML =
+      '<div style="position:relative;max-width:400px;">' +
+        '<input id="shop-search" type="text" placeholder="Search items..." autocomplete="off" ' +
+          'style="width:100%;padding:10px 12px 10px 36px;font-family:\'Press Start 2P\',cursive;font-size:9px;background:#0a0a14;color:#fff;border:4px solid #2A3FE5;outline:none;box-sizing:border-box;" ' +
+          'onfocus="this.style.borderColor=\'#5B6FFF\'" onblur="this.style.borderColor=\'#2A3FE5\'"/>' +
+        '<svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+      '</div>';
+
+    // ── Grid ────────────────────────────────────────────────
+    var gridWrap = document.createElement('div');
+    gridWrap.style.cssText = 'flex:1;overflow-y:auto;padding:20px;box-sizing:border-box;';
+
+    var errorEl = document.createElement('div');
+    errorEl.id = 'shop-error';
+    errorEl.style.cssText = 'color:#FF4444;font-size:8px;text-align:center;min-height:20px;margin-bottom:10px;font-family:\'Press Start 2P\',cursive;';
+
+    var grid = document.createElement('div');
+    grid.id = 'shop-grid';
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;';
+
+    gridWrap.appendChild(errorEl);
+    gridWrap.appendChild(grid);
+
+    page.appendChild(header);
+    page.appendChild(searchBar);
+    page.appendChild(gridWrap);
+    document.getElementById('ui-overlay').appendChild(page);
+
+    // ── Build item cards ────────────────────────────────────
+    var allItems = AVATAR_FRAMES.filter(function(f) { return f.id !== 'none'; });
+
+    function renderGrid(filter) {
+      grid.innerHTML = '';
+      var filtered = allItems.filter(function(f) {
+        return !filter || f.label.toLowerCase().includes(filter) || f.description.toLowerCase().includes(filter);
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div style="color:#6B7280;font-size:8px;grid-column:1/-1;text-align:center;padding:40px;">No items found.</div>';
+        return;
       }
 
-      // Price / requirement label
-      var priceHtml = f.unlockReq
-        ? '<div style="color:#27ae60;font-size:10px;margin-bottom:6px;">🏆 Win Reward</div>'
-        : '<div style="color:#F8B700;font-size:11px;margin-bottom:8px;">🪙 ' + f.cost.toLocaleString() + ' coins</div>';
+      filtered.forEach(function(f) {
+        var s = PlayerStats.get();
+        var owned = (s.framesOwned || ['none']).includes(f.id);
+        var active = s.frame === f.id;
+        var borderCol = owned ? '#27ae60' : '#2A3FE5';
 
-      return '<div style="background:rgba(8,14,28,0.7);border:2px solid ' + borderCol + ';padding:14px;text-align:center;">' +
-        '<div style="position:relative;width:60px;height:60px;margin:0 auto 8px;background:#0a0e18;">' +
-          '<img src="' + PlayerStats.getAvatarById(stats.avatar).src + '" style="position:absolute;top:2px;left:2px;width:56px;height:56px;object-fit:cover;object-position:top;z-index:1;"/>' +
-          '<canvas class="frame-preview-canvas" data-frame="' + f.id + '" width="60" height="60" style="position:absolute;top:0;left:0;z-index:2;pointer-events:none;"></canvas>' +
-        '</div>' +
-        '<div style="color:' + (f.color || '#F8B700') + ';font-size:12px;font-weight:bold;margin-bottom:3px;">' + f.label + '</div>' +
-        '<div style="color:#94A3B8;font-size:10px;margin-bottom:6px;">' + f.description + '</div>' +
-        priceHtml + btnHtml +
-      '</div>';
-    }).join('');
-
-    var m = this._createModal(
-      '<div style="color:#F8B700;font-size:18px;font-weight:bold;margin-bottom:6px;text-align:center;">🛒 AVATAR FRAME SHOP</div>' +
-      '<div style="color:#94A3B8;font-size:11px;text-align:center;margin-bottom:4px;">Your coins: <span style="color:#F8B700;font-weight:bold;">🪙 ' + (stats.coins || 0).toLocaleString() + '</span></div>' +
-      '<div style="color:#64748B;font-size:10px;text-align:center;margin-bottom:14px;letter-spacing:1px;">🏆 Win rewards are FREE — earn them by winning battles!</div>' +
-      '<div id="shop-error" style="color:#e74c3c;font-size:11px;text-align:center;min-height:16px;margin-bottom:8px;"></div>' +
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">' + framesHtml + '</div>'
-    );
-
-    // Animate frame previews
-    var animPreviews = function() {
-      m.querySelectorAll('.frame-preview-canvas').forEach(function(c) {
-        var fCtx = c.getContext('2d');
-        fCtx.clearRect(0,0,60,60);
-        FrameRenderer.drawFrame(fCtx, c.dataset.frame, 0, 0, 60);
-      });
-      if (m.parentNode) requestAnimationFrame(animPreviews);
-    };
-    animPreviews();
-
-    // Buy buttons
-    m.querySelectorAll('.frame-buy-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        if (btn.style.cursor === 'not-allowed') return;
-        Audio.playButton();
-        var frameId = btn.dataset.frame;
-        var result = PlayerStats.buyFrame(frameId);
-        if (!result.success) {
-          document.getElementById('shop-error').textContent = '\u26A0 ' + result.error; return;
+        // Button HTML
+        var btnHtml = '';
+        if (owned) {
+          btnHtml = '<div style="padding:7px;text-align:center;font-size:8px;color:#27ae60;border:2px solid #27ae60;background:rgba(39,174,96,0.1);">' + (active ? '✓ EQUIPPED' : '✓ OWNED') + '</div>';
+        } else if (f.unlockReq) {
+          var curW = s.wins[f.unlockReq.diff] || 0;
+          var met  = curW >= f.unlockReq.wins;
+          btnHtml = '<div style="font-size:7px;color:' + (met?'#27ae60':'#6B7280') + ';margin-bottom:5px;text-align:center;">' + (met ? '✓ Unlocked!' : curW+'/'+f.unlockReq.wins+' '+f.unlockReq.diff+' wins') + '</div>' +
+            '<button class="shop-claim-btn" data-frame="'+f.id+'" '+(met?'':'disabled ')+
+            'style="width:100%;padding:7px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:'+(met?'#00CC66':'#1A1A33')+';color:'+(met?'#000':'#444')+';border:2px solid '+(met?'#00FF88':'#333')+';cursor:'+(met?'pointer':'not-allowed')+';">CLAIM</button>';
+        } else {
+          var canAfford = (s.coins||0) >= f.cost;
+          btnHtml = '<div style="color:#FFCC00;font-size:8px;text-align:center;margin-bottom:6px;">🪙 '+f.cost.toLocaleString()+'</div>' +
+            '<button class="shop-buy-btn" data-frame="'+f.id+'" data-cost="'+f.cost+'" '+(canAfford?'':'disabled ')+
+            'style="width:100%;padding:7px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:'+(canAfford?'#2A3FE5':'#1A1A33')+';color:'+(canAfford?'#FFCC00':'#444')+';border:2px solid '+(canAfford?'#5B6FFF':'#333')+';cursor:'+(canAfford?'pointer':'not-allowed')+';">BUY</button>';
         }
-        // Sync to server
-        if (username) GameAPI.buyFrame(username, frameId).catch(function(){});
-        // Refresh modal
-        self._closeModal();
-        self._openShopModal();
-        // Update header coins
-        var coinEl = document.querySelector('#profile-btn div div:last-child');
-        if (coinEl) {
+
+        var priceTag = f.unlockReq
+          ? '<div style="color:#27ae60;font-size:7px;margin-bottom:6px;text-align:center;">🏆 Win Reward</div>'
+          : '<div style="color:#FFCC00;font-size:7px;margin-bottom:6px;text-align:center;">🪙 '+f.cost.toLocaleString()+' coins</div>';
+
+        var card = document.createElement('div');
+        card.style.cssText = 'background:#0a0a14;border:2px solid '+borderCol+';padding:14px;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color 0.15s;';
+        card.innerHTML =
+          '<div style="position:relative;width:60px;height:60px;background:#000;flex-shrink:0;">' +
+            '<img src="'+PlayerStats.getAvatarById(s.avatar).src+'" style="position:absolute;top:2px;left:2px;width:56px;height:56px;object-fit:cover;object-position:top;z-index:1;"/>' +
+            '<canvas class="shop-frame-canvas" data-frame="'+f.id+'" width="60" height="60" style="position:absolute;top:0;left:0;z-index:2;pointer-events:none;"></canvas>' +
+          '</div>' +
+          '<div style="color:'+(f.color||'#FFCC00')+';font-size:8px;text-align:center;letter-spacing:1px;">'+f.label+'</div>' +
+          '<div style="color:#6B7280;font-size:7px;text-align:center;line-height:1.6;">'+f.description+'</div>' +
+          priceTag + btnHtml;
+
+        grid.appendChild(card);
+      });
+
+      // Animate previews
+      (function animLoop() {
+        if (!document.getElementById('shop-page')) return;
+        grid.querySelectorAll('.shop-frame-canvas').forEach(function(c) {
+          var ctx = c.getContext('2d');
+          ctx.clearRect(0,0,60,60);
+          FrameRenderer.drawFrame(ctx, c.dataset.frame, 0, 0, 60);
+        });
+        requestAnimationFrame(animLoop);
+      })();
+
+      // Buy
+      grid.querySelectorAll('.shop-buy-btn').forEach(function(btn) {
+        if (btn.disabled) return;
+        btn.addEventListener('click', function() {
+          Audio.playButton();
+          var r = PlayerStats.buyFrame(btn.dataset.frame);
+          if (!r.success) { errorEl.textContent = '⚠ ' + r.error; return; }
+          if (username) GameAPI.buyFrame(username, btn.dataset.frame).catch(function(){});
           var s2 = PlayerStats.get();
-          coinEl.innerHTML = '\uD83C\uDFC6 ' + s2.wins.overall + ' wins &nbsp;|&nbsp; <span style="color:#F8B700;">\uD83E\uDE99 ' + (s2.coins||0) + '</span>';
-        }
+          document.getElementById('shop-coin-display').textContent = (s2.coins||0).toLocaleString() + ' coins';
+          var coinEl = document.getElementById('profile-header-coins');
+          if (coinEl) coinEl.innerHTML = '🏆 '+s2.wins.overall+' wins &nbsp;|&nbsp; <span style="color:#FFCC00;">🪙 '+(s2.coins||0)+'</span>';
+          renderGrid(document.getElementById('shop-search').value.toLowerCase().trim());
+        });
       });
+
+      // Claim
+      grid.querySelectorAll('.shop-claim-btn').forEach(function(btn) {
+        if (btn.disabled) return;
+        btn.addEventListener('click', function() {
+          Audio.playButton();
+          var r = PlayerStats.claimUnlockFrame(btn.dataset.frame);
+          if (!r.success) { errorEl.textContent = '⚠ ' + r.error; return; }
+          if (username) GameAPI.buyFrame(username, btn.dataset.frame).catch(function(){});
+          renderGrid(document.getElementById('shop-search').value.toLowerCase().trim());
+        });
+      });
+    }
+
+    renderGrid('');
+
+    // Search
+    page.querySelector('#shop-search').addEventListener('input', function() {
+      renderGrid(this.value.toLowerCase().trim());
     });
 
-    // Claim unlock buttons (free win-reward frames)
-    m.querySelectorAll('.frame-claim-btn').forEach(function(btn) {
-      if (btn.disabled) return;
-      btn.addEventListener('click', function() {
-        Audio.playButton();
-        var frameId = btn.dataset.frame;
-        var result = PlayerStats.claimUnlockFrame(frameId);
-        if (!result.success) {
-          document.getElementById('shop-error').textContent = '⚠ ' + result.error; return;
-        }
-        // Sync to server — reuse buyframe endpoint with cost=0
-        if (username) GameAPI.buyFrame(username, frameId).catch(function(){});
-        self._closeModal();
-        self._openShopModal();
-      });
+    // Back button
+    page.querySelector('#shop-back-btn').addEventListener('click', function() {
+      Audio.playButton();
+      page.remove();
     });
-
-    // Equip buttons removed from shop — use Profile > Select Frame to equip
   }
 
   _openPlayerProfileModal(r) {
