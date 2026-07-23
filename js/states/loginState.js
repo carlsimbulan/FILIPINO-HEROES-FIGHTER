@@ -104,9 +104,27 @@ class LoginState {
         </div>
         <div style="margin-bottom:18px;text-align:left;">
           <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">Password</label>
-          <input id="login-pass" type="password" placeholder="Enter password"
-            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px solid #2A3FE5;outline:none;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input id="login-pass" type="password" placeholder="Enter password"
+              style="width:100%;padding:10px 40px 10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px solid #2A3FE5;outline:none;box-sizing:border-box;"
+              onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
+            <button id="login-pass-toggle" type="button"
+              title="Toggle password visibility"
+              style="position:absolute;right:8px;background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;color:#6B7280;transition:color 0.15s;"
+              onmouseover="this.style.color='#5B6FFF'" onmouseout="this.style.color='#6B7280'">
+              <!-- Eye icon (shown when password is hidden) -->
+              <svg id="login-icon-show" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <!-- Eye-off icon (shown when password is visible) -->
+              <svg id="login-icon-hide" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div id="login-error" style="color:#FF4444;font-size:8px;min-height:18px;margin-bottom:12px;font-family:'Press Start 2P',cursive;"></div>
         <button id="login-btn"
@@ -134,9 +152,27 @@ class LoginState {
         </div>
         <div style="margin-bottom:18px;text-align:left;">
           <label style="color:#FFCC00;font-size:8px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:5px;font-family:'Press Start 2P',cursive;">Password</label>
-          <input id="reg-pass" type="password" placeholder="Choose a password"
-            style="width:100%;padding:10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px solid #2A3FE5;outline:none;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input id="reg-pass" type="password" placeholder="Choose a password"
+              style="width:100%;padding:10px 40px 10px 12px;font-family:'Press Start 2P',cursive;font-size:9px;background:#000;color:#fff;border:4px solid #2A3FE5;outline:none;box-sizing:border-box;"
+              onfocus="this.style.borderColor='#5B6FFF'" onblur="this.style.borderColor='#2A3FE5'"/>
+            <button id="reg-pass-toggle" type="button"
+              title="Toggle password visibility"
+              style="position:absolute;right:8px;background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;color:#6B7280;transition:color 0.15s;"
+              onmouseover="this.style.color='#5B6FFF'" onmouseout="this.style.color='#6B7280'">
+              <!-- Eye icon (shown when password is hidden) -->
+              <svg id="reg-icon-show" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <!-- Eye-off icon (shown when password is visible) -->
+              <svg id="reg-icon-hide" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div id="reg-error" style="color:#FF4444;font-size:8px;min-height:18px;margin-bottom:12px;font-family:'Press Start 2P',cursive;"></div>
         <button id="reg-btn"
@@ -151,6 +187,27 @@ class LoginState {
 
     overlay.appendChild(panel);
     this._panel = panel;
+
+    // Password visibility toggles
+    document.getElementById('login-pass-toggle').addEventListener('click', () => {
+      const input = document.getElementById('login-pass');
+      const iconShow = document.getElementById('login-icon-show');
+      const iconHide = document.getElementById('login-icon-hide');
+      const isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      iconShow.style.display = isHidden ? 'none' : '';
+      iconHide.style.display = isHidden ? '' : 'none';
+    });
+
+    document.getElementById('reg-pass-toggle').addEventListener('click', () => {
+      const input = document.getElementById('reg-pass');
+      const iconShow = document.getElementById('reg-icon-show');
+      const iconHide = document.getElementById('reg-icon-hide');
+      const isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      iconShow.style.display = isHidden ? 'none' : '';
+      iconHide.style.display = isHidden ? '' : 'none';
+    });
 
     // Tab switching
     document.getElementById('tab-login').addEventListener('click', () => {
