@@ -488,27 +488,60 @@ class HomeState {
     page.appendChild(tableWrap);
     document.getElementById('ui-overlay').appendChild(page);
 
-    // ── Row click popup: View Profile + Send Friend Request ─
+    // ── Tab buttons ───────────────────────────────────────────
+    var vsaiBtn, vsaiDD;
+
+    var overallTabBtn = document.createElement('button');
+    overallTabBtn.className = 'lb-tab'; overallTabBtn.dataset.tab = 'overall';
+    overallTabBtn.textContent = 'OVERALL';
+    overallTabBtn.style.cssText = 'padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#2A3FE5;color:#FFCC00;border:4px solid #5B6FFF;cursor:pointer;letter-spacing:1px;';
+    tabsWrap.appendChild(overallTabBtn);
+
+    var vsaiWrap = document.createElement('div');
+    vsaiWrap.style.cssText = 'position:relative;display:inline-block;';
+    vsaiBtn = document.createElement('button');
+    vsaiBtn.id = 'vsai-tab-btn';
+    vsaiBtn.textContent = 'VS AI ▾';
+    vsaiBtn.style.cssText = 'padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#6B7280;border:4px solid #1A1A33;cursor:pointer;letter-spacing:1px;';
+    vsaiDD = document.createElement('div');
+    vsaiDD.style.cssText = 'display:none;position:absolute;top:100%;left:0;z-index:600;background:#000;border:4px solid #2A3FE5;min-width:120px;';
+    [['easy','#00CC66'],['medium','#FFB852'],['hard','#FF4444']].forEach(function(o) {
+      var ob = document.createElement('button');
+      ob.className = 'vsai-opt'; ob.dataset.tab = o[0];
+      ob.textContent = o[0].toUpperCase();
+      ob.style.cssText = 'display:block;width:100%;padding:9px 14px;background:none;border:none;border-bottom:2px solid #1A1A33;color:'+o[1]+';font-family:\'Press Start 2P\',cursive;font-size:8px;text-align:left;cursor:pointer;';
+      vsaiDD.appendChild(ob);
+    });
+    vsaiWrap.appendChild(vsaiBtn); vsaiWrap.appendChild(vsaiDD);
+    tabsWrap.appendChild(vsaiWrap);
+
+    var pvpTabBtn = document.createElement('button');
+    pvpTabBtn.className = 'lb-tab'; pvpTabBtn.dataset.tab = 'pvp';
+    pvpTabBtn.textContent = '⚔ PVP';
+    pvpTabBtn.style.cssText = 'padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#6B7280;border:4px solid #1A1A33;cursor:pointer;letter-spacing:1px;';
+    tabsWrap.appendChild(pvpTabBtn);
+
+    // ── Row popup ─────────────────────────────────────────────
     var showRowPopup = function(anchor, r) {
       var existing = document.getElementById('lb-row-popup');
       if (existing) { existing.remove(); return; }
       var popup = document.createElement('div');
       popup.id = 'lb-row-popup';
       var rect = anchor.getBoundingClientRect();
-      popup.style.cssText = 'position:fixed;z-index:3000;background:rgba(10,14,24,0.98);border:1px solid rgba(58,136,232,0.4);box-shadow:0 4px 20px rgba(0,0,0,0.7);font-family:Georgia,serif;min-width:190px;';
+      popup.style.cssText = 'position:fixed;z-index:3000;background:rgba(10,14,24,0.98);border:1px solid rgba(58,136,232,0.4);box-shadow:0 4px 20px rgba(0,0,0,0.7);font-family:\'Press Start 2P\',cursive;min-width:190px;';
       popup.style.top  = Math.min(rect.bottom + 4, window.innerHeight - 100) + 'px';
       popup.style.left = Math.max(4, rect.left - 40) + 'px';
       var viewBtn = document.createElement('button');
       viewBtn.innerHTML = '👤 View Profile';
-      viewBtn.style.cssText = 'display:block;width:100%;padding:11px 16px;background:none;border:none;border-bottom:1px solid rgba(58,136,232,0.15);color:#B8D8F8;font-family:Georgia,serif;font-size:12px;text-align:left;cursor:pointer;';
+      viewBtn.style.cssText = 'display:block;width:100%;padding:11px 16px;background:none;border:none;border-bottom:1px solid rgba(58,136,232,0.15);color:#B8D8F8;font-family:\'Press Start 2P\',cursive;font-size:8px;text-align:left;cursor:pointer;';
       viewBtn.onmouseover = function(){ viewBtn.style.background='rgba(58,136,232,0.12)'; };
       viewBtn.onmouseout  = function(){ viewBtn.style.background='none'; };
       viewBtn.addEventListener('click', function() { popup.remove(); Audio.playButton(); self._openPlayerProfileModal(r); });
       var isSelf = r.username === myUsername;
       var addBtn = document.createElement('button');
-      addBtn.innerHTML = isSelf ? '🚫 That\'s you' : '➕ Send Friend Request';
+      addBtn.innerHTML = isSelf ? '🚫 That\'s you' : '➕ Friend Request';
       addBtn.disabled = isSelf;
-      addBtn.style.cssText = 'display:block;width:100%;padding:11px 16px;background:none;border:none;color:' + (isSelf ? '#2a4060' : '#27ae60') + ';font-family:Georgia,serif;font-size:12px;text-align:left;cursor:' + (isSelf ? 'default' : 'pointer') + ';';
+      addBtn.style.cssText = 'display:block;width:100%;padding:11px 16px;background:none;border:none;color:'+(isSelf?'#2a4060':'#27ae60')+';font-family:\'Press Start 2P\',cursive;font-size:8px;text-align:left;cursor:'+(isSelf?'default':'pointer')+';';
       if (!isSelf) {
         addBtn.onmouseover = function(){ addBtn.style.background='rgba(39,174,96,0.12)'; };
         addBtn.onmouseout  = function(){ addBtn.style.background='none'; };
@@ -517,39 +550,20 @@ class HomeState {
           try {
             var res = await GameAPI.sendFriendRequest(myUsername, r.username);
             var toast = document.createElement('div');
-            toast.style.cssText = 'position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:rgba(8,14,28,0.96);border:1px solid ' + (res.success?'#27ae60':'#e74c3c') + ';color:' + (res.success?'#27ae60':'#e74c3c') + ';padding:10px 22px;font-family:Georgia,serif;font-size:12px;z-index:9999;pointer-events:none;';
-            toast.textContent = res.success ? '✓ Request sent to ' + (r.ingamename||r.username) : '⚠ ' + (res.error||'Failed');
+            toast.style.cssText = 'position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:rgba(8,14,28,0.96);border:1px solid '+(res.success?'#27ae60':'#e74c3c')+';color:'+(res.success?'#27ae60':'#e74c3c')+';padding:10px 22px;font-family:\'Press Start 2P\',cursive;font-size:8px;z-index:9999;pointer-events:none;';
+            toast.textContent = res.success ? '✓ Request sent to '+(r.ingamename||r.username) : '⚠ '+(res.error||'Failed');
             document.body.appendChild(toast);
             setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 3000);
           } catch(e) {}
         });
       }
-      popup.appendChild(viewBtn);
-      popup.appendChild(addBtn);
+      popup.appendChild(viewBtn); popup.appendChild(addBtn);
       document.body.appendChild(popup);
       var closeDD = function(e) { if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', closeDD); } };
       setTimeout(function(){ document.addEventListener('click', closeDD); }, 0);
     };
-    // ── 3-tab layout: Overall | VS AI ▾ | PVP ───────────────
-    var tabsHtml =
-      '<button class="lb-tab" data-tab="overall" style="padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#2A3FE5;color:#FFCC00;border:4px solid #5B6FFF;cursor:pointer;letter-spacing:1px;">OVERALL</button>' +
-      '<div style="position:relative;display:inline-block;">' +
-        '<button id="vsai-tab-btn" style="padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#6B7280;border:4px solid #1A1A33;cursor:pointer;letter-spacing:1px;">VS AI ▾</button>' +
-        '<div id="vsai-dropdown" style="display:none;position:absolute;top:100%;left:0;z-index:500;background:#000;border:4px solid #2A3FE5;min-width:120px;">' +
-          '<button class="vsai-opt" data-tab="easy"   style="display:block;width:100%;padding:9px 14px;background:none;border:none;border-bottom:2px solid #1A1A33;color:#00CC66;font-family:\'Press Start 2P\',cursive;font-size:8px;text-align:left;cursor:pointer;">EASY</button>' +
-          '<button class="vsai-opt" data-tab="medium" style="display:block;width:100%;padding:9px 14px;background:none;border:none;border-bottom:2px solid #1A1A33;color:#FFB852;font-family:\'Press Start 2P\',cursive;font-size:8px;text-align:left;cursor:pointer;">MEDIUM</button>' +
-          '<button class="vsai-opt" data-tab="hard"   style="display:block;width:100%;padding:9px 14px;background:none;border:none;color:#FF4444;font-family:\'Press Start 2P\',cursive;font-size:8px;text-align:left;cursor:pointer;">HARD</button>' +
-        '</div>' +
-      '</div>' +
-      '<button class="lb-tab" data-tab="pvp" style="padding:7px 12px;font-family:\'Press Start 2P\',cursive;font-size:8px;background:#000;color:#6B7280;border:4px solid #1A1A33;cursor:pointer;letter-spacing:1px;">⚔ PVP</button>';
 
-    var m = this._createModal(
-      '<div style="color:#FFCC00;font-size:14px;font-family:\'Press Start 2P\',cursive;margin-bottom:16px;text-align:center;">🏆 LEADERBOARD</div>' +
-      '<div id="lb-tabs" style="display:flex;gap:6px;margin-bottom:16px;justify-content:center;align-items:center;flex-wrap:wrap;">' + tabsHtml + '</div>' +
-      '<div id="lb-body" style="background:#000;border:4px solid #2A3FE5;padding:14px;min-height:80px;"></div>'
-    );
-
-    // ── Shared row builder ──────────────────────────────────
+    // ── Row builder ───────────────────────────────────────────
     var buildRow = function(r, i, wins, losses) {
       var rankColor = i===0?'#F8B700':i===1?'#94A3B8':i===2?'#c0824a':'#64748B';
       var av = PlayerStats.getAvatarById(r.avatar||'lapu');
@@ -557,22 +571,22 @@ class HomeState {
       var frameObj = PlayerStats.getFrameById(frameId);
       var el = document.createElement('div');
       el.className = 'lb-row';
-      el.style.cssText = 'display:grid;grid-template-columns:36px 1fr 60px 60px 60px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(58,136,232,0.08);cursor:pointer;transition:background 0.15s;';
+      el.style.cssText = 'display:grid;grid-template-columns:36px 1fr 70px 70px 70px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(58,136,232,0.08);cursor:pointer;transition:background 0.15s;';
       el.onmouseover = function(){ el.style.background='rgba(58,136,232,0.08)'; };
       el.onmouseout  = function(){ el.style.background='transparent'; };
       el.innerHTML =
-        '<span style="color:'+rankColor+';font-weight:bold;text-align:center;">'+(i+1)+'</span>' +
+        '<span style="color:'+rankColor+';font-weight:bold;text-align:center;font-size:9px;">'+(i+1)+'</span>' +
         '<div style="display:flex;align-items:center;gap:8px;">' +
           '<div style="position:relative;width:32px;height:32px;flex-shrink:0;">' +
             '<img src="'+av.src+'" style="position:absolute;top:2px;left:2px;width:28px;height:28px;object-fit:cover;object-position:top;z-index:1;"/>' +
             '<canvas class="lb-frame-canvas" data-frame="'+frameId+'" width="32" height="32" style="position:absolute;top:0;left:0;z-index:2;pointer-events:none;"></canvas>' +
           '</div>' +
-          '<div><div style="color:#fff;font-size:11px;font-weight:bold;">'+self._escapeHtml(r.ingamename||r.username)+'</div>' +
-          '<div style="color:'+(frameObj.color||'#64748B')+';font-size:9px;">'+frameObj.label+'</div></div>' +
+          '<div><div style="color:#fff;font-size:9px;font-weight:bold;">'+self._escapeHtml(r.ingamename||r.username)+'</div>' +
+          '<div style="color:'+(frameObj.color||'#64748B')+';font-size:7px;">'+frameObj.label+'</div></div>' +
         '</div>' +
-        '<span style="color:#27ae60;font-weight:bold;text-align:center;">'+wins+'</span>' +
-        '<span style="color:#e74c3c;font-weight:bold;text-align:center;">'+losses+'</span>' +
-        '<span style="color:'+rankColor+';text-align:center;">'+(i===0?'👑':i===1?'🥈':i===2?'🥉':'#'+(i+1))+'</span>';
+        '<span style="color:#27ae60;font-weight:bold;text-align:center;font-size:9px;">'+wins+'</span>' +
+        '<span style="color:#e74c3c;font-weight:bold;text-align:center;font-size:9px;">'+losses+'</span>' +
+        '<span style="color:'+rankColor+';text-align:center;font-size:10px;">'+(i===0?'👑':i===1?'🥈':i===2?'🥉':'—')+'</span>';
       el.addEventListener('click', function() {
         Audio.playButton();
         showRowPopup(el, { username:r.username||'', ingamename:r.ingamename||r.username||'', avatar:r.avatar||'lapu', frame:r.activeframe||'none',
@@ -585,101 +599,84 @@ class HomeState {
     var animFrames = function(body) {
       var canvases = body ? body.querySelectorAll('.lb-frame-canvas') : [];
       canvases.forEach(function(c){ var fCtx=c.getContext('2d'); fCtx.clearRect(0,0,32,32); FrameRenderer.drawFrame(fCtx,c.dataset.frame||'none',0,0,32); });
-      if (canvases.length) requestAnimationFrame(function(){ animFrames(body); });
-    };
-    var lbHeader = '<div style="display:grid;grid-template-columns:36px 1fr 60px 60px 60px;gap:8px;color:#64748B;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid rgba(58,136,232,0.15);margin-bottom:8px;">' +
-      '<span>#</span><span>PLAYER</span><span style="text-align:center;color:#27ae60;">WINS</span><span style="text-align:center;color:#e74c3c;">LOSS</span><span style="text-align:center;">RANK</span></div>';
-
-    // ── renderPVPLB ──────────────────────────────────────────
-    var renderPVPLB = function() {
-      var body = document.getElementById('lb-body');
-      if (!body) return;
-      body.innerHTML = '<div style="color:#64748B;text-align:center;padding:16px;">Loading...</div>';
-      GameAPI.getPVPLeaderboard().then(function(rows) {
-        if (!rows || rows.error || rows.length === 0) {
-          body.innerHTML = lbHeader + '<div style="color:#64748B;text-align:center;padding:16px;">No PVP battles yet.</div>'; return;
-        }
-        body.innerHTML = lbHeader;
-        rows.forEach(function(r, i) { body.appendChild(buildRow(r, i, r.pvpwins||0, r.pvplosses||0)); });
-        animFrames(body);
-      }).catch(function() {
-        body.innerHTML = '<div style="color:#e74c3c;text-align:center;padding:16px;">Could not load PVP leaderboard.</div>';
-      });
+      if (canvases.length && page.parentNode) requestAnimationFrame(function(){ animFrames(body); });
     };
 
-    // ── renderLB ─────────────────────────────────────────────
+    // ── renderLB ──────────────────────────────────────────────
     var renderLB = function(tab) {
-      if (tab === 'pvp') { renderPVPLB(); return; }
-      var body = document.getElementById('lb-body');
-      if (!body) return;
-      body.innerHTML = '<div style="color:#64748B;text-align:center;padding:16px;">Loading...</div>';
-      var winField  = tab === 'overall' ? 'overallwins'   : tab + 'win';
-      var lossField = tab === 'overall' ? 'overalllosses' : tab + 'loss';
-      GameAPI.getLeaderboard(tab).then(function(rows) {
+      lbBody.innerHTML = '<div style="color:#6B7280;font-size:8px;text-align:center;padding:20px;font-family:\'Press Start 2P\',cursive;">Loading...</div>';
+      var isPVP = tab === 'pvp';
+      var fetchFn = isPVP ? GameAPI.getPVPLeaderboard() : GameAPI.getLeaderboard(tab);
+      var winField  = isPVP ? 'pvpwins'   : tab === 'overall' ? 'overallwins'   : tab+'win';
+      var lossField = isPVP ? 'pvplosses' : tab === 'overall' ? 'overalllosses' : tab+'loss';
+      fetchFn.then(function(rows) {
+        lbBody.innerHTML = '';
         if (!rows || rows.error || rows.length === 0) {
-          body.innerHTML = lbHeader + '<div style="color:#64748B;text-align:center;padding:16px;">No battles yet. Fight!</div>'; return;
+          lbBody.innerHTML = '<div style="color:#6B7280;font-size:8px;text-align:center;padding:24px;font-family:\'Press Start 2P\',cursive;">No data yet. Fight!</div>';
+          return;
         }
-        body.innerHTML = lbHeader;
-        rows.forEach(function(r, i) { body.appendChild(buildRow(r, i, r[winField]||0, r[lossField]||0)); });
-        animFrames(body);
+        rows.forEach(function(r, i) { lbBody.appendChild(buildRow(r, i, r[winField]||0, r[lossField]||0)); });
+        animFrames(lbBody);
       }).catch(function() {
+        if (isPVP) {
+          lbBody.innerHTML = '<div style="color:#e74c3c;font-size:8px;text-align:center;padding:24px;font-family:\'Press Start 2P\',cursive;">Could not load PVP data.</div>';
+          return;
+        }
         var lb = PlayerStats.getLeaderboard();
         var av = PlayerStats.getAvatarById(lb.avatar);
-        body.innerHTML = lbHeader +
-          '<div style="color:#F0A030;font-size:10px;text-align:center;margin-bottom:8px;">⚠ Server offline — showing local data</div>' +
-          '<div style="display:grid;grid-template-columns:36px 1fr 60px 60px 60px;gap:8px;align-items:center;padding:5px 0;">' +
-          '<span style="color:#F8B700;font-weight:bold;text-align:center;">1</span>' +
-          '<div style="display:flex;align-items:center;gap:8px;"><img src="' + av.src + '" style="width:28px;height:28px;object-fit:cover;"/>' +
-          '<div style="color:#fff;font-size:11px;font-weight:bold;">' + self._escapeHtml(lb.username) + '</div></div>' +
-          '<span style="color:#27ae60;font-weight:bold;text-align:center;">' + (lb.wins[tab]||lb.wins.overall||0) + '</span>' +
-          '<span style="color:#e74c3c;font-weight:bold;text-align:center;">' + (lb.losses[tab]||lb.losses.overall||0) + '</span>' +
-          '<span style="color:#F8B700;text-align:center;">👑</span></div>';
+        lbBody.innerHTML =
+          '<div style="color:#F0A030;font-size:7px;text-align:center;margin-bottom:8px;padding-top:8px;font-family:\'Press Start 2P\',cursive;">⚠ Server offline — local data</div>' +
+          '<div style="display:grid;grid-template-columns:36px 1fr 70px 70px 70px;gap:8px;align-items:center;padding:8px 0;">' +
+          '<span style="color:#F8B700;font-weight:bold;text-align:center;font-size:9px;">1</span>' +
+          '<div style="display:flex;align-items:center;gap:8px;"><img src="'+av.src+'" style="width:28px;height:28px;object-fit:cover;"/>' +
+          '<div style="color:#fff;font-size:9px;font-family:\'Press Start 2P\',cursive;">'+self._escapeHtml(lb.username)+'</div></div>' +
+          '<span style="color:#27ae60;font-weight:bold;text-align:center;font-size:9px;">'+(lb.wins[tab]||lb.wins.overall||0)+'</span>' +
+          '<span style="color:#e74c3c;font-weight:bold;text-align:center;font-size:9px;">'+(lb.losses[tab]||lb.losses.overall||0)+'</span>' +
+          '<span style="text-align:center;font-size:10px;">👑</span></div>';
       });
     };
 
     // ── Wire up tabs ─────────────────────────────────────────
     renderLB('overall');
 
-    m.querySelectorAll('.lb-tab').forEach(function(btn) {
+    tabsWrap.querySelectorAll('.lb-tab').forEach(function(btn) {
       btn.addEventListener('click', function() {
         Audio.playButton();
         activeTab = btn.dataset.tab;
-        m.querySelectorAll('.lb-tab').forEach(function(b) {
-          var isActive = b.dataset.tab === activeTab;
-          b.style.background  = isActive ? '#2A3FE5' : '#000';
-          b.style.color       = isActive ? '#FFCC00' : '#6B7280';
-          b.style.borderColor = isActive ? '#5B6FFF' : '#1A1A33';
+        tabsWrap.querySelectorAll('.lb-tab').forEach(function(b) {
+          var on = b.dataset.tab === activeTab;
+          b.style.background  = on ? '#2A3FE5' : '#000';
+          b.style.color       = on ? '#FFCC00' : '#6B7280';
+          b.style.borderColor = on ? '#5B6FFF' : '#1A1A33';
         });
+        vsaiBtn.style.background='#000'; vsaiBtn.style.color='#6B7280'; vsaiBtn.style.borderColor='#1A1A33'; vsaiBtn.textContent='VS AI ▾';
         renderLB(activeTab);
       });
     });
 
-    // VS AI dropdown
-    var vsaiBtn = document.getElementById('vsai-tab-btn');
-    var vsaiDD  = document.getElementById('vsai-dropdown');
-    if (vsaiBtn && vsaiDD) {
-      vsaiBtn.addEventListener('click', function(e) {
+    vsaiBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      vsaiDD.style.display = vsaiDD.style.display === 'none' ? 'block' : 'none';
+    });
+
+    vsaiDD.querySelectorAll('.vsai-opt').forEach(function(opt) {
+      opt.addEventListener('click', function(e) {
         e.stopPropagation();
-        vsaiDD.style.display = vsaiDD.style.display === 'none' ? 'block' : 'none';
-      });
-      vsaiDD.querySelectorAll('.vsai-opt').forEach(function(opt) {
-        opt.addEventListener('click', function(e) {
-          e.stopPropagation();
-          Audio.playButton();
-          vsaiDD.style.display = 'none';
-          activeTab = opt.dataset.tab;
-          m.querySelectorAll('.lb-tab').forEach(function(b) {
-            b.style.background='#000'; b.style.color='#6B7280'; b.style.borderColor='#1A1A33';
-          });
-          vsaiBtn.style.background  = '#2A3FE5';
-          vsaiBtn.style.color       = '#FFCC00';
-          vsaiBtn.style.borderColor = '#5B6FFF';
-          vsaiBtn.textContent = 'VS AI · ' + activeTab.toUpperCase() + ' ▾';
-          renderLB(activeTab);
+        Audio.playButton();
+        vsaiDD.style.display = 'none';
+        activeTab = opt.dataset.tab;
+        tabsWrap.querySelectorAll('.lb-tab').forEach(function(b) {
+          b.style.background='#000'; b.style.color='#6B7280'; b.style.borderColor='#1A1A33';
         });
+        vsaiBtn.style.background  = '#2A3FE5';
+        vsaiBtn.style.color       = '#FFCC00';
+        vsaiBtn.style.borderColor = '#5B6FFF';
+        vsaiBtn.textContent = 'VS AI · ' + activeTab.toUpperCase() + ' ▾';
+        renderLB(activeTab);
       });
-      document.addEventListener('click', function(){ if(vsaiDD) vsaiDD.style.display='none'; });
-    }
+    });
+
+    page.addEventListener('click', function() { vsaiDD.style.display = 'none'; });
   }
 
   _openSettingsModal() {
