@@ -415,6 +415,79 @@ class HomeState {
     var myUsername = '';
     try { myUsername = sessionStorage.getItem('fhf_rawusername') || ''; } catch(e) {}
 
+    // ── Full-page overlay ─────────────────────────────────────
+    var page = document.createElement('div');
+    page.id = 'lb-page';
+    page.style.cssText = [
+      'position:fixed;top:0;left:0;width:100%;height:100%;',
+      'background:#000;z-index:500;pointer-events:all;',
+      'display:flex;flex-direction:column;',
+      'font-family:\'Press Start 2P\',cursive;',
+    ].join('');
+
+    // Top bar
+    var topBar = document.createElement('div');
+    topBar.style.cssText = [
+      'width:100%;display:flex;align-items:center;gap:14px;',
+      'padding:10px 20px;background:#000;border-bottom:4px solid #2A3FE5;',
+      'box-sizing:border-box;flex-shrink:0;',
+    ].join('');
+
+    var backBtn = document.createElement('button');
+    backBtn.style.cssText = [
+      'padding:7px 14px;font-family:\'Press Start 2P\',cursive;font-size:8px;',
+      'background:#000;color:#9CA3AF;border:4px solid #2A3FE5;cursor:pointer;',
+      'letter-spacing:1px;transition:all 0.15s;flex-shrink:0;',
+    ].join('');
+    backBtn.textContent = '← BACK';
+    backBtn.onmouseover = function(){ this.style.borderColor='#5B6FFF'; this.style.color='#fff'; };
+    backBtn.onmouseout  = function(){ this.style.borderColor='#2A3FE5'; this.style.color='#9CA3AF'; };
+    backBtn.addEventListener('click', function() {
+      Audio.playButton();
+      var popup = document.getElementById('lb-row-popup');
+      if (popup) popup.remove();
+      page.remove();
+    });
+
+    var titleEl = document.createElement('div');
+    titleEl.style.cssText = 'color:#FFCC00;font-size:11px;letter-spacing:2px;flex-shrink:0;';
+    titleEl.textContent = '🏆 LEADERBOARD';
+
+    // Tabs (flex, pushed to right side)
+    var tabsWrap = document.createElement('div');
+    tabsWrap.id = 'lb-tabs';
+    tabsWrap.style.cssText = 'display:flex;gap:6px;align-items:center;margin-left:auto;flex-wrap:wrap;';
+
+    topBar.appendChild(backBtn);
+    topBar.appendChild(titleEl);
+    topBar.appendChild(tabsWrap);
+
+    // Table header + body
+    var tableWrap = document.createElement('div');
+    tableWrap.style.cssText = 'flex:1;overflow-y:auto;padding:20px 24px;box-sizing:border-box;';
+
+    var lbHeader = document.createElement('div');
+    lbHeader.style.cssText = [
+      'display:grid;grid-template-columns:36px 1fr 70px 70px 70px;gap:8px;',
+      'color:#6B7280;font-size:8px;letter-spacing:1px;text-transform:uppercase;',
+      'padding-bottom:8px;border-bottom:4px solid #2A3FE5;margin-bottom:0;',
+    ].join('');
+    lbHeader.innerHTML =
+      '<span>#</span><span>PLAYER</span>' +
+      '<span style="text-align:center;color:#27ae60;">WINS</span>' +
+      '<span style="text-align:center;color:#e74c3c;">LOSS</span>' +
+      '<span style="text-align:center;">RANK</span>';
+
+    var lbBody = document.createElement('div');
+    lbBody.id = 'lb-body';
+
+    tableWrap.appendChild(lbHeader);
+    tableWrap.appendChild(lbBody);
+
+    page.appendChild(topBar);
+    page.appendChild(tableWrap);
+    document.getElementById('ui-overlay').appendChild(page);
+
     // ── Row click popup: View Profile + Send Friend Request ─
     var showRowPopup = function(anchor, r) {
       var existing = document.getElementById('lb-row-popup');
