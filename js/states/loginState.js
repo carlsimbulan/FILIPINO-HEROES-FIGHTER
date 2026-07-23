@@ -73,12 +73,8 @@ class LoginState {
   _buildUI() {
     const overlay = document.getElementById('ui-overlay');
 
-    // Wrapper holds ONLY the login panel (centered by overlay flex)
-    const wrapper = document.createElement('div');
-    wrapper.className = 'ui-panel';
-    wrapper.style.cssText = `display: contents;`;
-
     const panel = document.createElement('div');
+    panel.className = 'ui-panel';
     panel.style.cssText = `
       background: rgba(0,0,0,0.92);
       border: 4px solid #2A3FE5;
@@ -194,8 +190,6 @@ class LoginState {
         </button>
       </div>
     `;
-
-    wrapper.appendChild(panel);
 
     // Quote ticker — fixed at bottom of screen, independent of centered panel
     const quotes = [
