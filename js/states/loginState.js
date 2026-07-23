@@ -11,12 +11,17 @@ class LoginState {
   constructor(game) {
     this.game = game;
     this._panel = null;
+    this._ticker = null;
     this._tab = 'login'; // 'login' | 'register'
+    this._quoteTimer = null;
   }
 
   enter() { this._buildUI(); }
 
   exit() {
+    if (this._quoteTimer) { clearInterval(this._quoteTimer); this._quoteTimer = null; }
+    if (this._ticker && this._ticker.parentNode) this._ticker.parentNode.removeChild(this._ticker);
+    this._ticker = null;
     if (this._panel && this._panel.parentNode) this._panel.parentNode.removeChild(this._panel);
     this._panel = null;
   }
@@ -67,8 +72,13 @@ class LoginState {
 
   _buildUI() {
     const overlay = document.getElementById('ui-overlay');
+
+    // Wrapper holds ONLY the login panel (centered by overlay flex)
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ui-panel';
+    wrapper.style.cssText = `display: contents;`;
+
     const panel = document.createElement('div');
-    panel.className = 'ui-panel';
     panel.style.cssText = `
       background: rgba(0,0,0,0.92);
       border: 4px solid #2A3FE5;
@@ -185,8 +195,64 @@ class LoginState {
       </div>
     `;
 
+    wrapper.appendChild(panel);
+
+    // Quote ticker — fixed at bottom of screen, independent of centered panel
+    const quotes = [
+      '"Ang bayani ay hindi natatakot lumaban." — Lapu-Lapu',
+      '"Fight with honor. Win with glory."',
+      '"The arena awaits. Choose your hero wisely."',
+      '"Every warrior has a story. What\'s yours?"',
+      '"From the islands of the Philippines — legends rise."',
+      '"Hindi ka mag-iisa sa labanan."',
+      '"Master your fighter. Conquer your enemies."',
+      '"The blood of heroes runs through your veins."',
+    ];
+
+    const ticker = document.createElement('div');
+    ticker.id = 'login-quote-ticker';
+    ticker.style.cssText = `
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 420px;
+      text-align: center;
+      pointer-events: none;
+      z-index: 20;
+    `;
+
+    const quoteEl = document.createElement('p');
+    quoteEl.id = 'login-quote-text';
+    quoteEl.style.cssText = `
+      font-family: 'Press Start 2P', cursive;
+      font-size: 7px;
+      color: #6B7280;
+      line-height: 2;
+      margin: 0;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+      letter-spacing: 0.5px;
+    `;
+    quoteEl.textContent = quotes[0];
+    ticker.appendChild(quoteEl);
+
+    // Append panel to overlay (centered), ticker directly to body (bottom)
     overlay.appendChild(panel);
+    document.body.appendChild(ticker);
     this._panel = panel;
+    this._ticker = ticker;
+
+    // Quote rotation
+    let quoteIndex = 0;
+    this._quoteTimer = setInterval(() => {
+      quoteEl.style.opacity = '0';
+      setTimeout(() => {
+        quoteIndex = (quoteIndex + 1) % quotes.length;
+        quoteEl.textContent = quotes[quoteIndex];
+        quoteEl.style.opacity = '1';
+      }, 500);
+    }, 4000);
 
     // Password visibility toggles
     document.getElementById('login-pass-toggle').addEventListener('click', () => {
