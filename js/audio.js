@@ -6,12 +6,25 @@ const Audio = (() => {
   let sfxGain = null;
   let bgPlaying = false;
   let bgNodes = [];
+  let bgLoopTimer = null;
 
   function _init() {
     if (ctx) return;
     ctx = new (window.AudioContext || window.webkitAudioContext)();
-    bgGain  = ctx.createGain(); bgGain.gain.value  = 0.35; bgGain.connect(ctx.destination);
-    sfxGain = ctx.createGain(); sfxGain.gain.value = 0.7;  sfxGain.connect(ctx.destination);
+    sfxGain = ctx.createGain(); sfxGain.gain.value = 0.7; sfxGain.connect(ctx.destination);
+  }
+
+  function _musicAllowed() {
+    if (typeof PlayerStats === 'undefined') return true;
+    try { return PlayerStats.get().musicOn !== false; } catch (e) { return true; }
+  }
+
+  function _ensureBgGain() {
+    if (!bgGain) {
+      bgGain = ctx.createGain();
+      bgGain.gain.value = 0.35;
+      bgGain.connect(ctx.destination);
+    }
   }
 
   function _resume() {
@@ -31,7 +44,7 @@ const Audio = (() => {
     o.start(start); o.stop(start + dur);
   }
 
-  function _noise(start, dur, gainVal, filterFreq = 2000) {
+  function _noise(start, dur, gainVal, filterFreq = 2000, target = sfxGain) {
     const bufSize = ctx.sampleRate * dur;
     const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
     const data = buf.getChannelData(0);
@@ -45,7 +58,7 @@ const Audio = (() => {
     const g = ctx.createGain();
     g.gain.setValueAtTime(gainVal, start);
     g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-    src.connect(filter); filter.connect(g); g.connect(sfxGain);
+    src.connect(filter); filter.connect(g); g.connect(target);
     src.start(start); src.stop(start + dur);
   }
 
@@ -53,7 +66,8 @@ const Audio = (() => {
   // Epic Filipino-inspired loop using layered oscillators
   function startBgMusic() {
     _init();
-    if (bgPlaying) return;
+    if (bgPlaying || !_musicAllowed()) return;
+    _ensureBgGain();
     bgPlaying = true;
 
     const now = ctx.currentTime;
@@ -108,9 +122,9 @@ const Audio = (() => {
           ko.start(t); ko.stop(t + 0.25);
         }
         // hi-hat on every beat
-        _noise(t, 0.05, 0.08, 8000);
+        _noise(t, 0.05, 0.08, 8000, bgGain);
         // snare on beats 2, 6, 10, 14
-        if (i % 4 === 2) _noise(t, 0.12, 0.25, 1500);
+        if (i % 4 === 2) _noise(t, 0.12, 0.25, 1500, bgGain);
       }
     }
 
@@ -122,12 +136,25 @@ const Audio = (() => {
     }
 
     // Auto restart after ~60s
-    setTimeout(() => { bgPlaying = false; startBgMusic(); }, 58000);
+    if (bgLoopTimer) clearTimeout(bgLoopTimer);
+    bgLoopTimer = setTimeout(() => {
+      bgLoopTimer = null;
+      bgPlaying = false;
+      startBgMusic();
+    }, 58000);
   }
 
   function stopBgMusic() {
-    bgNodes.forEach(n => { try { n.stop ? n.stop() : n.disconnect(); } catch(e){} });
+    if (bgLoopTimer) {
+      clearTimeout(bgLoopTimer);
+      bgLoopTimer = null;
+    }
+    bgNodes.forEach(n => { try { n.stop ? n.stop() : n.disconnect(); } catch (e) {} });
     bgNodes = [];
+    if (bgGain) {
+      try { bgGain.disconnect(); } catch (e) {}
+      bgGain = null;
+    }
     bgPlaying = false;
   }
 
@@ -260,7 +287,8 @@ const Audio = (() => {
   // Start audio context on first user interaction
   function unlockOnInteraction() {
     _init();
-    if (!bgPlaying) startBgMusic();
+    _resume();
+    if (_musicAllowed() && !bgPlaying) startBgMusic();
     document.removeEventListener('click', unlockOnInteraction);
     document.removeEventListener('keydown', unlockOnInteraction);
   }

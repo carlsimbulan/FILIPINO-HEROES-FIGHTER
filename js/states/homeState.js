@@ -695,6 +695,8 @@ class HomeState {
       '<div style="text-align:center;margin-bottom:10px;"><button id="reset-stats" style="padding:10px 24px;font-family:\'Georgia\',serif;font-size:12px;font-weight:bold;background:rgba(42,10,20,0.7);color:#e74c3c;border:1px solid #e74c3c44;cursor:pointer;letter-spacing:2px;">\uD83D\uDDD1 RESET STATS</button></div>' +
       '<div style="text-align:center;"><button id="logout-btn" style="padding:10px 24px;font-family:\'Georgia\',serif;font-size:12px;font-weight:bold;background:rgba(10,10,10,0.8);color:#94A3B8;border:1px solid rgba(148,163,184,0.3);cursor:pointer;letter-spacing:2px;width:100%;">🚪 LOGOUT</button></div>'
     );
+    if (!stats.musicOn) Audio.stopBgMusic();
+
     document.getElementById('music-toggle').addEventListener('click', function() {
       Audio.playButton();
       var s = PlayerStats.get(); var v = !s.musicOn; PlayerStats.setMusic(v);

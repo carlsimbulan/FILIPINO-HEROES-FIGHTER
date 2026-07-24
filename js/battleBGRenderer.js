@@ -12,7 +12,6 @@ const BattleBG_Renderer = {
 
   // Gradient cache — invalidated when canvas dimensions change
   _cachedSkyGrad:    null,
-  _cachedGroundGrad: null,
   _cachedVigGrad:    null,
   _cachedW:          0,
   _cachedH:          0,
@@ -101,24 +100,16 @@ const BattleBG_Renderer = {
     // ── 1. Gradient cache check & rebuild ──────────────────────────────────
     if (W !== this._cachedW || H !== this._cachedH) {
       this._cachedSkyGrad    = null;
-      this._cachedGroundGrad = null;
       this._cachedVigGrad    = null;
       this._cachedW = W;
       this._cachedH = H;
     }
 
     if (!this._cachedSkyGrad) {
-      this._cachedSkyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+      this._cachedSkyGrad = ctx.createLinearGradient(0, 0, 0, H);
       this._cachedSkyGrad.addColorStop(0,   '#02020f');  // deep midnight black
       this._cachedSkyGrad.addColorStop(0.5, '#0a0a2e');  // dark navy
-      this._cachedSkyGrad.addColorStop(1,   '#1a1040');  // deep indigo near ground
-    }
-
-    if (!this._cachedGroundGrad) {
-      this._cachedGroundGrad = ctx.createLinearGradient(0, groundY, 0, H);
-      this._cachedGroundGrad.addColorStop(0,   '#1a1a2e');  // dark stone
-      this._cachedGroundGrad.addColorStop(0.3, '#12122a');  // darker mid
-      this._cachedGroundGrad.addColorStop(1,   '#0a0a1a');  // near black base
+      this._cachedSkyGrad.addColorStop(1,   '#1a1040');  // deep indigo at bottom
     }
 
     if (!this._cachedVigGrad) {
@@ -129,7 +120,7 @@ const BattleBG_Renderer = {
 
     // ── 2. Sky gradient layer ───────────────────────────────────────────────
     ctx.fillStyle = this._cachedSkyGrad;
-    ctx.fillRect(0, 0, W, groundY);
+    ctx.fillRect(0, 0, W, H);
 
     // ── 2b. Stars ──────────────────────────────────────────────────────────
     ctx.save();
@@ -253,33 +244,7 @@ const BattleBG_Renderer = {
       ctx.restore();
     }
 
-    // ── 6. Arena floor ────────────────────────────────────────────────────────
-    ctx.fillStyle = this._cachedGroundGrad;
-    ctx.fillRect(0, groundY, W, GROUND_HEIGHT);
-
-    // Top-edge highlight
-    ctx.fillStyle = '#2a2a4a';
-    ctx.fillRect(0, groundY, W, 2);
-
-    // Vertical tile cracks every 64px
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    for (let cx = 64; cx < W; cx += 64) {
-      ctx.fillRect(cx, groundY + 2, 2, GROUND_HEIGHT - 2);
-    }
-
-    // Horizontal offset cracks at +22px, offset 32px
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    for (let cx = 32; cx < W; cx += 64) {
-      ctx.fillRect(cx, groundY + 22, 1, GROUND_HEIGHT - 22);
-    }
-
-    // Stone section markers every 128px
-    ctx.fillStyle = '#1e1e38';
-    for (let cx = 0; cx < W; cx += 128) {
-      ctx.fillRect(cx, groundY, 8, GROUND_HEIGHT);
-    }
-
-    // ── 7. Animated sprites (torches, crowd, banners) ─────────────────────────
+    // ── 6. Animated sprites (torches, crowd, banners) ─────────────────────────
     const torchFrame = Math.floor(this._frameCount / 8) % 4;
     const torchY     = groundY - 45;
     this._drawTorch(ctx, Math.round(W * 0.18), torchY, torchFrame);

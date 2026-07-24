@@ -22,13 +22,13 @@ const Renderer = {
     this._torchPositionsCache = null;
 
     // ── Night sky gradient ────────────────────────────────
-    const sky = ctx.createLinearGradient(0, 0, 0, groundY);
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0,   '#00000a');
     sky.addColorStop(0.4, '#04051a');
     sky.addColorStop(0.8, '#080820');
     sky.addColorStop(1,   '#0a0a18');
     ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, groundY);
+    ctx.fillRect(0, 0, W, H);
 
     // ── Twinkling stars ───────────────────────────────────
     const starSeeds = [
@@ -170,36 +170,6 @@ const Renderer = {
       ctx.restore();
     }
     ctx.restore(); // end fogOffset
-
-    // ── Dark stone ground ─────────────────────────────────
-    const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
-    groundGrad.addColorStop(0,   '#1a1a2e');
-    groundGrad.addColorStop(0.2, '#13132a');
-    groundGrad.addColorStop(0.6, '#0d0d20');
-    groundGrad.addColorStop(1,   '#080810');
-    ctx.fillStyle = groundGrad;
-    ctx.fillRect(0, groundY, W, GROUND_HEIGHT);
-
-    // Stone edge highlight
-    ctx.fillStyle = '#2a2a44';
-    ctx.fillRect(0, groundY, W, 3);
-    ctx.fillStyle = '#3a3a5a';
-    ctx.fillRect(0, groundY, W, 1);
-
-    // Stone tile cracks
-    ctx.fillStyle = 'rgba(0,0,20,0.5)';
-    for (let i = 0; i < W; i += 64) {
-      ctx.fillRect(i, groundY + 3, 2, GROUND_HEIGHT - 3);
-    }
-    for (let i = 0; i < W; i += 64) {
-      ctx.fillRect(i + 32, groundY + 22, 1, GROUND_HEIGHT - 22);
-    }
-    // Stone texture specks
-    ctx.fillStyle = 'rgba(80,80,120,0.1)';
-    for (let i = 10; i < W; i += 20) {
-      ctx.fillRect(i, groundY + 8, 3, 2);
-      ctx.fillRect(i + 10, groundY + 18, 2, 2);
-    }
 
     // ── Vignette ──────────────────────────────────────────
     const vig = ctx.createRadialGradient(W/2, H/2, H*0.25, W/2, H/2, H*0.85);
