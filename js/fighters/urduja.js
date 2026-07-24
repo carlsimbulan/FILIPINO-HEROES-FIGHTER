@@ -144,6 +144,10 @@ class Urduja extends Fighter {
     const goldCol  = '#c0a030';
     const pantCol  = dead?'#333':'#3a1a5a';
 
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(x+this.width/2,y+this.height,20,5,0,0,Math.PI*2); ctx.fill();
+
     if (ult) {
       ctx.save(); ctx.globalAlpha=0.2; ctx.fillStyle='#f1c40f';
       ctx.fillRect(x-10,y-10,this.width+20,this.height+20); ctx.restore();

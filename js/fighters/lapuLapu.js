@@ -144,6 +144,12 @@ class LapuLapu extends Fighter {
     const pantColor = dead ? '#333'    : '#3d1a78';
     const pantDark  = dead ? '#222'    : '#2a1050';
 
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(x + this.width / 2, y + this.height, 22, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
     if (skillQ) {
       ctx.save(); ctx.globalAlpha = 0.15;
       ctx.fillStyle = '#e67e22';

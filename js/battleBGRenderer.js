@@ -172,7 +172,70 @@ const BattleBG_Renderer = {
     ctx.fillRect(0, 0, W, groundY);
     ctx.restore();
 
-    // ── 4. Ambient particles ────────────────────────────────────────────────
+    // ── 4. Parallax mid-ground layers ─────────────────────────────────────────
+    if (focusX === undefined) focusX = W / 2;
+    const parallaxBase  = focusX - W / 2;
+    const mountainOffset = parallaxBase * 0.04;
+    const bambooOffset   = parallaxBase * 0.08;
+
+    // Layer overdraw: draw from -W*0.12 to W*1.12 (total width = W*1.24)
+    const overdrawStart = -Math.ceil(W * 0.12);
+    const overdrawEnd   =  Math.ceil(W * 1.12);
+
+    // ── Mountain ridgeline (depth: mid, multiplier 0.04) ──────────────────
+    ctx.save();
+    ctx.translate(mountainOffset, 0);
+
+    // Sky background behind mountains (lighter sky-to-ground color)
+    ctx.fillStyle = '#c4c8a8';
+    // Jagged mountain silhouette using 4×4 blocks
+    const mountH = Math.round(groundY * 0.35); // mountain base height above ground
+    const mountTopY = Math.round(groundY * 0.42); // where mountain starts appearing
+    // Draw mountains as silhouette with 4×4 grid-aligned blocks
+    const blockSize = 4;
+    const mountColors = ['#1a2a3a', '#1e3040', '#162030'];
+
+    // Define mountain profile: array of heights per 4px column
+    for (let bx = overdrawStart; bx < overdrawEnd; bx += blockSize) {
+      // Use sine waves to generate a natural-looking ridge
+      const nx = bx / W;
+      const h = Math.round((
+        Math.sin(nx * Math.PI * 3.7 + 1.2) * 0.18 +
+        Math.sin(nx * Math.PI * 7.1 + 2.4) * 0.10 +
+        Math.sin(nx * Math.PI * 1.9 + 0.8) * 0.12 +
+        0.55
+      ) * mountH / blockSize) * blockSize;
+      const topY = groundY - h;
+      ctx.fillStyle = mountColors[Math.abs(Math.round(bx / blockSize)) % 3];
+      ctx.fillRect(bx, topY, blockSize, h);
+    }
+    ctx.restore();
+
+    // ── Bamboo grove (depth: close, multiplier 0.08) ──────────────────────
+    ctx.save();
+    ctx.translate(bambooOffset, 0);
+
+    const bambooTopY = Math.round(groundY * 0.55); // bamboo starts lower
+    const bambooBaseH = Math.round(groundY * 0.45);
+    const bambooBlockSize = 4;
+    const bambooColors = ['#0d1f0d', '#102510', '#142e14', '#0a1a0a'];
+
+    for (let bx = overdrawStart; bx < overdrawEnd; bx += bambooBlockSize) {
+      const nx = bx / W;
+      // Bamboo stalks: taller, narrower peaks
+      const h = Math.round((
+        Math.sin(nx * Math.PI * 8.3 + 0.5) * 0.22 +
+        Math.sin(nx * Math.PI * 14.7 + 1.8) * 0.14 +
+        Math.sin(nx * Math.PI * 5.1 + 3.1) * 0.08 +
+        0.56
+      ) * bambooBaseH / bambooBlockSize) * bambooBlockSize;
+      const topY = groundY - h;
+      ctx.fillStyle = bambooColors[Math.abs(Math.round(bx / bambooBlockSize)) % 4];
+      ctx.fillRect(bx, topY, bambooBlockSize, h);
+    }
+    ctx.restore();
+
+    // ── 5. Ambient particles (behind arena floor) ─────────────────────────────
     for (const p of this._particles) {
       ctx.save();
       ctx.globalAlpha = Math.max(0, 1.0 - p.age / p.lifetime);
@@ -181,7 +244,41 @@ const BattleBG_Renderer = {
       ctx.restore();
     }
 
-    // ── 5. Vignette (final layer) ─────────────────────────────────────────────
+    // ── 6. Animated sprites (torches, crowd, banners) ─────────────────────────
+    const torchFrame = Math.floor(this._frameCount / 8) % 4;
+    const torchY     = groundY - 45;
+    this._drawTorch(ctx, Math.round(W * 0.18), torchY, torchFrame);
+    this._drawTorch(ctx, Math.round(W * 0.82), torchY, torchFrame);
+
+    // ── Crowd silhouettes ──────────────────────────────────────────────────
+    const crowdBaseY   = groundY - 80;
+    const crowdSpacing = Math.round(W / 9);
+    for (let i = 0; i < 8; i++) {
+      const phase = (i / 8) * Math.PI * 2;
+      const bobY  = Math.round(Math.sin(this._frameCount * 0.08 + phase) * 1.5);
+      const fx    = Math.round(crowdSpacing + i * crowdSpacing);
+      ctx.fillStyle = '#1a1a2a';
+      ctx.fillRect(fx - 3, crowdBaseY + bobY, 6, 12);
+    }
+
+    // ── Banners ────────────────────────────────────────────────────────────
+    const bannerXs = [Math.round(W * 0.25), Math.round(W * 0.75)];
+    for (let b = 0; b < 2; b++) {
+      const bx    = bannerXs[b];
+      const by    = groundY - 90;
+      const tipDY = Math.round(Math.sin(this._lightTimer * 2 + b) * 2);
+      // Pole
+      ctx.fillStyle = '#8a6a4a';
+      ctx.fillRect(bx - 1, by, 2, 40);
+      // Banner body
+      ctx.fillStyle = '#2a1060';  // deep purple night banner
+      ctx.fillRect(bx, by, 16, 24 + tipDY);
+      // Moon motif (3×3 at center)
+      ctx.fillStyle = '#c8d8ff';  // pale moonlight
+      ctx.fillRect(bx + 6, by + 10, 3, 3);
+    }
+
+    // ── 9. Vignette (final layer) ─────────────────────────────────────────────
     ctx.fillStyle = this._cachedVigGrad;
     ctx.fillRect(0, 0, W, H);
   },
