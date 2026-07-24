@@ -141,10 +141,6 @@ class SultanKudarat extends Fighter {
     const goldCol  = '#c0a030';
     const armorCol = armored?'rgba(100,180,255,0.4)':'transparent';
 
-    // Shadow (bigger for bigger character)
-    ctx.fillStyle='rgba(0,0,0,0.3)';
-    ctx.beginPath(); ctx.ellipse(x+this.width/2,y+this.height,28,6,0,0,Math.PI*2); ctx.fill();
-
     // Spirit armor glow
     if (armored) {
       ctx.save(); ctx.globalAlpha=0.25;

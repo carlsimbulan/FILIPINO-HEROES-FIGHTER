@@ -105,34 +105,10 @@ const Audio = (() => {
       });
     }
 
-    // Repeating drum pattern
-    function scheduleDrums(offset) {
-      for (let i = 0; i < 16; i++) {
-        const t = now + offset + i * beat * 0.5;
-        // kick on beats 0, 4, 8, 12
-        if (i % 4 === 0) {
-          const ko = ctx.createOscillator();
-          const kg = ctx.createGain();
-          ko.type = 'sine';
-          ko.frequency.setValueAtTime(150, t);
-          ko.frequency.exponentialRampToValueAtTime(40, t + 0.15);
-          kg.gain.setValueAtTime(0.5, t);
-          kg.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-          ko.connect(kg); kg.connect(bgGain);
-          ko.start(t); ko.stop(t + 0.25);
-        }
-        // hi-hat on every beat
-        _noise(t, 0.05, 0.08, 8000, bgGain);
-        // snare on beats 2, 6, 10, 14
-        if (i % 4 === 2) _noise(t, 0.12, 0.25, 1500, bgGain);
-      }
-    }
-
     const loopLen = 16 * beat * 0.5; // 16 half-beats
-    // Schedule 8 loops
+    // Schedule 8 loops (melody + bass only — no drum layer)
     for (let i = 0; i < 8; i++) {
       scheduleMelody(i * loopLen);
-      scheduleDrums(i * loopLen);
     }
 
     // Auto restart after ~60s

@@ -111,25 +111,6 @@ const Renderer = {
       ctx.restore();
     });
 
-    // ── Mid-ground dark cliffs ────────────────────────────
-    ctx.fillStyle = '#08081a';
-    ctx.beginPath();
-    ctx.moveTo(0, groundY);
-    ctx.lineTo(0, groundY - 55);
-    ctx.lineTo(40, groundY - 90); ctx.lineTo(90, groundY - 65);
-    ctx.lineTo(150, groundY - 100); ctx.lineTo(210, groundY - 70);
-    ctx.lineTo(270, groundY - 88); ctx.lineTo(330, groundY - 55);
-    ctx.lineTo(W - 310, groundY - 72); ctx.lineTo(W - 250, groundY - 95);
-    ctx.lineTo(W - 180, groundY - 68); ctx.lineTo(W - 120, groundY - 88);
-    ctx.lineTo(W - 60, groundY - 60); ctx.lineTo(W, groundY - 78);
-    ctx.lineTo(W, groundY);
-    ctx.closePath(); ctx.fill();
-
-    // ── Animated torch flames ─────────────────────────────
-    this._drawDarkTorch(ctx, 55,         groundY - 55, t);
-    this._drawDarkTorch(ctx, W - 65,     groundY - 55, t);
-    this._drawDarkTorch(ctx, W * 0.28,   groundY - 42, t);
-    this._drawDarkTorch(ctx, W * 0.72,   groundY - 42, t);
     ctx.restore(); // end castleOffset
 
     // ── Animated floating magic particles ────────────────
@@ -152,24 +133,6 @@ const Renderer = {
       ctx.fill();
       ctx.restore();
     }
-
-    // ── Animated fog wisps at ground level ───────────────
-    ctx.save();
-    ctx.translate(fogOffset, 0);
-    for (let i = 0; i < 6; i++) {
-      const fx     = (i / 6) * W + Math.sin(t * 0.3 + i * 1.4) * 40;
-      const fw     = 120 + i * 30;
-      const fAlpha = 0.06 + 0.04 * Math.sin(t * 0.6 + i);
-      ctx.save();
-      ctx.globalAlpha = fAlpha;
-      const fogGrad = ctx.createRadialGradient(fx, groundY, 0, fx, groundY, fw * 0.5);
-      fogGrad.addColorStop(0,   '#4466aa');
-      fogGrad.addColorStop(1,   'rgba(0,0,0,0)');
-      ctx.fillStyle = fogGrad;
-      ctx.fillRect(fx - fw * 0.5, groundY - 18, fw, 24);
-      ctx.restore();
-    }
-    ctx.restore(); // end fogOffset
 
     // ── Vignette ──────────────────────────────────────────
     const vig = ctx.createRadialGradient(W/2, H/2, H*0.25, W/2, H/2, H*0.85);
@@ -469,7 +432,6 @@ const Renderer = {
     ctx.translate(cx, cy);
     ctx.scale(scale, scale);
     ctx.translate(-cx, -cy);
-    this._renderDropShadow(ctx, fighter);      // shadow appears beneath sprite
     fighter.renderSprite(ctx);                 // existing pixel art
     this._applySpriteShader(ctx, fighter);     // state-reactive color overlays
     this._renderTorchLighting(ctx, fighter);   // proximity torch glow

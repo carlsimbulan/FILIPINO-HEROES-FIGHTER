@@ -146,10 +146,6 @@ class AntonioLuna extends Fighter {
     const pantCol  = dead ? '#333' : '#1a2e14';
     const bootCol  = dead ? '#222' : '#1a1008';
 
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath(); ctx.ellipse(x+this.width/2, y+this.height, 22, 5, 0, 0, Math.PI*2); ctx.fill();
-
     // Rage aura
     if (rage) {
       ctx.save(); ctx.globalAlpha = 0.2; ctx.fillStyle = '#ff4400';

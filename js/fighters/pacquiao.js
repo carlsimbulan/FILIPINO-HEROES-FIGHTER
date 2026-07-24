@@ -161,11 +161,6 @@ class Pacquiao extends Fighter {
     const shoeCol  = dead ? '#222' : '#1a1a1a';
 
     // ── Shadow on ground ──────────────────────────────────
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(x + this.width / 2, y + this.height, 22, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
     // ── Legs with walk cycle ──────────────────────────────
     const legSwing = walking ? Math.sin(af * Math.PI / 2) * 6 : 0;
 

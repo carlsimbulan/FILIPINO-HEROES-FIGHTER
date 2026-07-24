@@ -184,10 +184,6 @@ class Luces extends Fighter {
     const pantCol  = dead?'#333':'#2a1a0e';
     const wrapCol  = '#8B4513';
 
-    // Shadow
-    ctx.fillStyle='rgba(0,0,0,0.2)';
-    ctx.beginPath(); ctx.ellipse(x+this.width/2,y+this.height,18,4,0,0,Math.PI*2); ctx.fill();
-
     if (invis) { ctx.save(); ctx.globalAlpha=0.15; ctx.fillStyle='#00ff88';
       ctx.fillRect(x-6,y-6,this.width+12,this.height+12); ctx.restore(); }
     if (ult) { ctx.save(); ctx.globalAlpha=0.2; ctx.fillStyle='#f39c12';
